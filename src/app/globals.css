@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+@theme {
+  /* Brand Colors updated to specific request */
+  --color-primary: #6366f1;
+  --color-secondary: #a855f7;
+  --color-accent: #f97316;
+  
+  --color-background: #0a0a0f;
+  --color-surface: #12121a;
+  --color-foreground: #fafafa;
+  --color-muted: #a1a1aa;
+  
+  --color-border: #1f1f2b;
+  
+  --radius-xl: 1.5rem;
+  --radius-2xl: 2rem;
+  --radius-3xl: 3rem;
+
+  --font-heading: var(--font-outfit);
+  --font-sans: var(--font-inter);
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+}
+
+:root {
+  --radius: 0.75rem;
+}
+
+@layer base {
+  * {
+    @apply border-white/5;
+  }
+  
+  body {
+    @apply bg-background text-foreground antialiased selection:bg-primary/30;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading font-bold tracking-tight;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-surface/60 backdrop-blur-xl border border-white/10;
+  }
+  
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-linear-to-r from-primary via-secondary to-accent;
+  }
+
+  .text-shimmer {
+    background: linear-gradient(90deg, #6366f1, #a855f7, #f97316, #6366f1);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: shimmer 4s linear infinite;
+  }
+}
