@@ -1,19 +1,30 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
+import { useAppSelector } from '@/store/hooks';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { AppBottomNav } from '@/components/layout/app-bottom-nav';
 
-const SIDEBAR_EXPANDED = 256; // px — w-64
-const SIDEBAR_COLLAPSED = 80;  // px — w-20
-const LG_BREAKPOINT = 1024;    // px — Tailwind lg
+const SIDEBAR_EXPANDED = 256;
+const SIDEBAR_COLLAPSED = 80;
+const LG_BREAKPOINT = 1024;
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
+  const { user, loading } = useAppSelector((state) => state.auth);
+  const router = useRouter();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
-  const mainRef = useRef<HTMLDivElement>(null);
 
-  // Detect desktop breakpoint
+  // Redirect unauthenticated users to login
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push('/login');
+    }
+  }, [user, loading, router]);
+
+  // Track desktop breakpoint
   useEffect(() => {
     const mq = window.matchMedia(`(min-width: ${LG_BREAKPOINT}px)`);
     setIsDesktop(mq.matches);
@@ -26,6 +37,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     ? (isSidebarCollapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED)
     : 0;
 
+  // Show spinner while checking session or during redirect
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-background">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+          className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full"
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background text-white">
       {/* Fixed sidebar */}
@@ -34,9 +58,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
 
-      {/* Main content — offset driven purely by JS, no Tailwind class toggling */}
+      {/* Main content — paddingLeft matches sidebar width exactly */}
       <main
-        ref={mainRef}
         style={{
           paddingLeft: `${offset}px`,
           transition: 'padding-left 300ms ease',
