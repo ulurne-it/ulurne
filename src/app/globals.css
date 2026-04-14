@@ -49,6 +49,10 @@
   .glass {
     @apply bg-surface/60 backdrop-blur-xl border border-white/10;
   }
+
+  .glass-card {
+    @apply bg-surface/40 backdrop-blur-2xl border border-white/10 shadow-2xl;
+  }
   
   .text-gradient {
     @apply bg-clip-text text-transparent bg-linear-to-r from-primary via-secondary to-accent;
