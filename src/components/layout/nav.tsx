@@ -32,7 +32,6 @@ export function Nav() {
     { name: 'Courses', href: '/#courses', icon: BookOpen },
     { name: 'Tutors', href: '/#tutors', icon: Users },
     { name: 'Features', href: '/#features', icon: Star },
-    { name: 'Pricing', href: '/#pricing', icon: CreditCard },
   ];
 
   return (
@@ -113,7 +112,7 @@ export function Nav() {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-0 z-50 lg:hidden bg-background pt-24 px-6 flex flex-col"
+              className="fixed inset-0 z-[100] lg:hidden bg-[#050505] pt-24 px-6 flex flex-col shadow-2xl"
             >
               {/* Background Glow */}
               <div className="absolute top-0 right-0 w-[80%] h-[40%] bg-primary/10 blur-[100px] pointer-events-none" />
