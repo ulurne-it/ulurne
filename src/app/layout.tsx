@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Outfit } from "next/font/google";
 import { Toaster } from "sonner";
+import { StoreProvider } from "@/components/providers/store-provider";
 import "./globals.css";
 
 const inter = Inter({
@@ -37,10 +38,12 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${outfit.variable} font-sans min-h-full flex flex-col bg-background text-foreground`}
       >
-        <main className="flex-1 flex flex-col">
-          {children}
-        </main>
-        <Toaster position="top-center" richColors />
+        <StoreProvider>
+          <main className="flex-1 flex flex-col">
+            {children}
+          </main>
+          <Toaster position="top-center" richColors />
+        </StoreProvider>
       </body>
     </html>
   );
