@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { GraduationCap, LogOut, User, Menu, X, ChevronRight, BookOpen, Users, Star } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppSelector } from '@/store/hooks';
 import { LogoutModal } from '@/components/auth/logout-modal';
@@ -38,10 +39,15 @@ export function Nav() {
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2 group cursor-pointer relative z-[70]">
-            <div className="w-10 h-10 rounded-xl bg-linear-to-br from-primary to-secondary flex items-center justify-center shadow-lg shadow-primary/20 group-hover:rotate-12 transition-transform">
-              <GraduationCap className="w-6 h-6 text-white" />
+            <div className="relative group-hover:scale-110 transition-transform">
+              <Image
+                src="/logos/logo.png"
+                alt="ULurne Logo"
+                width={150}
+                height={150}
+                className="object-contain"
+              />
             </div>
-            <span className="text-2xl font-heading font-black tracking-tighter uppercase italic">ULurne</span>
           </Link>
 
           {/* Desktop Links */}
@@ -60,16 +66,16 @@ export function Nav() {
           {/* Actions */}
           <div className="flex items-center gap-4 relative z-[70]">
             {user ? (
-              <div className="hidden md:flex items-center gap-4">
-                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 group hover:border-primary/30 transition-colors">
-                  <User className="w-3.5 h-3.5 text-primary" />
-                  <span className="text-xs font-black uppercase tracking-widest truncate max-w-[120px]">
-                    {user.user_metadata.full_name || user.email?.split('@')[0]}
-                  </span>
-                </div>
+              <div className="flex items-center gap-4">
+                <Link
+                  href="/app"
+                  className="bg-primary hover:bg-primary/90 text-white px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl shadow-primary/20 active:scale-95 transition-all flex items-center gap-2"
+                >
+                  Enter Academy
+                </Link>
                 <button
                   onClick={() => setShowLogoutModal(true)}
-                  className="p-2.5 rounded-full bg-white/5 hover:bg-red-500/10 hover:text-red-500 border border-white/5 transition-all active:scale-95 group"
+                  className="hidden md:flex p-2.5 rounded-full bg-white/5 hover:bg-red-500/10 hover:text-red-500 border border-white/5 transition-all active:scale-95 group"
                 >
                   <LogOut className="w-4 h-4" />
                 </button>
@@ -114,7 +120,7 @@ export function Nav() {
           >
             {/* Background Glows */}
             <div className="absolute top-0 right-0 w-full h-full bg-primary/5 blur-[120px] pointer-events-none" />
-            
+
             <div className="space-y-10 relative z-10 overflow-y-auto pb-20">
               <div className="grid gap-3">
                 {navLinks.map((link, i) => (
