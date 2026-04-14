@@ -43,8 +43,8 @@ export function Nav() {
               <Image
                 src="/logos/logo.png"
                 alt="ULurne Logo"
-                width={150}
-                height={150}
+                width={40}
+                height={40}
                 className="object-contain"
               />
             </div>
