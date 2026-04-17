@@ -30,9 +30,13 @@ export function ProfileHeader({
             <div className="w-full h-full rounded-[2.3rem] bg-[#0a0a0f] overflow-hidden -rotate-3 group-hover:-rotate-6 transition-transform border-4 border-[#0a0a0f]">
               {profile?.avatar_url || user?.user_metadata?.avatar_url ? (
                 <img 
-                  src={`${profile?.avatar_url || user?.user_metadata?.avatar_url}?t=${profile?._ts || Date.now()}`} 
+                  src={(profile?.avatar_url || user?.user_metadata?.avatar_url).includes('?') 
+                    ? `${profile?.avatar_url || user?.user_metadata?.avatar_url}&t=${profile?._ts || Date.now()}`
+                    : `${profile?.avatar_url || user?.user_metadata?.avatar_url}?t=${profile?._ts || Date.now()}`
+                  } 
                   alt={profile?.full_name} 
-                  className="w-full h-full object-cover" 
+                  className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center text-4xl font-black text-white/50">
