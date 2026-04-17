@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useAppSelector } from '@/store/hooks';
 import { AppSidebar } from '@/components/layout/app-sidebar';
@@ -15,6 +15,7 @@ const LG_BREAKPOINT = 1024;
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAppSelector((state) => state.auth);
   const router = useRouter();
+  const pathname = usePathname();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
 
@@ -52,7 +53,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-background text-white overflow-hidden">
+    <div className="min-h-screen bg-background text-white">
       {/* Top Bar — now overlays the content for an immersive feel */}
       <AppTopBar offset={offset} />
 
@@ -67,11 +68,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         style={{
           paddingLeft: `${offset}px`,
           transition: 'padding-left 300ms ease',
-          height: '100vh',
         }}
         className="relative"
       >
-        <div className="h-full">
+        <div className={`h-full ${pathname === '/app' ? 'pt-0' : 'pt-16'}`}>
           {children}
         </div>
       </main>
