@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { GraduationCap, LogOut, User, Menu, X, ChevronRight, BookOpen, Users, Star, CreditCard } from 'lucide-react';
+import { GraduationCap, LogOut, User, Menu, X, ChevronRight, BookOpen, Users, Star } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppSelector } from '@/store/hooks';
 import { LogoutModal } from '@/components/auth/logout-modal';
@@ -14,12 +15,10 @@ export function Nav() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
 
-  // Close menu on route change
   useEffect(() => {
     setIsMenuOpen(false);
   }, [pathname]);
 
-  // Prevent scroll when menu is open
   useEffect(() => {
     if (isMenuOpen) {
       document.body.style.overflow = 'hidden';
@@ -32,19 +31,23 @@ export function Nav() {
     { name: 'Courses', href: '/#courses', icon: BookOpen },
     { name: 'Tutors', href: '/#tutors', icon: Users },
     { name: 'Features', href: '/#features', icon: Star },
-    { name: 'Pricing', href: '/#pricing', icon: CreditCard },
   ];
 
   return (
     <>
-      <nav className="fixed top-0 w-full z-50 border-b border-white/5 glass-card bg-background/60 backdrop-blur-xl">
+      <nav className="fixed top-0 w-full z-[60] border-b border-white/5 bg-background/80 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group cursor-pointer relative z-[60]">
-            <div className="w-10 h-10 rounded-xl bg-linear-to-br from-primary to-secondary flex items-center justify-center shadow-lg shadow-primary/20 group-hover:rotate-12 transition-transform">
-              <GraduationCap className="w-6 h-6 text-white" />
+          <Link href="/" className="flex items-center gap-2 group cursor-pointer relative z-[70]">
+            <div className="relative group-hover:scale-110 transition-transform">
+              <Image
+                src="/logos/logo.png"
+                alt="ULurne Logo"
+                width={40}
+                height={40}
+                className="object-contain"
+              />
             </div>
-            <span className="text-2xl font-heading font-black tracking-tighter uppercase italic">ULurne</span>
           </Link>
 
           {/* Desktop Links */}
@@ -61,21 +64,20 @@ export function Nav() {
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-4 relative z-[60]">
+          <div className="flex items-center gap-4 relative z-[70]">
             {user ? (
-              <div className="hidden md:flex items-center gap-4">
-                <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 group hover:border-primary/30 transition-colors">
-                  <User className="w-3.5 h-3.5 text-primary" />
-                  <span className="text-xs font-black uppercase tracking-widest truncate max-w-[120px]">
-                    {user.user_metadata.full_name || user.email?.split('@')[0]}
-                  </span>
-                </div>
+              <div className="flex items-center gap-4">
+                <Link
+                  href="/app"
+                  className="bg-primary hover:bg-primary/90 text-white px-6 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl shadow-primary/20 active:scale-95 transition-all flex items-center gap-2"
+                >
+                  Enter Academy
+                </Link>
                 <button
                   onClick={() => setShowLogoutModal(true)}
-                  className="p-2.5 rounded-full bg-white/5 hover:bg-red-500/10 hover:text-red-500 border border-white/5 transition-all active:scale-95 group"
-                  title="Logout"
+                  className="hidden md:flex p-2.5 rounded-full bg-white/5 hover:bg-red-500/10 hover:text-red-500 border border-white/5 transition-all active:scale-95 group"
                 >
-                  <LogOut className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+                  <LogOut className="w-4 h-4" />
                 </button>
               </div>
             ) : (
@@ -98,111 +100,106 @@ export function Nav() {
             {/* Mobile Toggle */}
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="lg:hidden p-2.5 rounded-xl bg-white/5 border border-white/5 text-white active:scale-90 transition-all"
+              className="lg:hidden p-2.5 rounded-xl bg-white/5 border border-white/10 text-white active:scale-90 transition-all"
             >
               {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
           </div>
         </div>
+      </nav>
 
-        {/* Mobile Menu Overlay */}
-        <AnimatePresence>
-          {isMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, x: '100%' }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-0 z-50 lg:hidden bg-background pt-24 px-6 flex flex-col"
-            >
-              {/* Background Glow */}
-              <div className="absolute top-0 right-0 w-[80%] h-[40%] bg-primary/10 blur-[100px] pointer-events-none" />
-              
-              <div className="space-y-8 relative z-10">
-                <div className="text-[10px] font-black uppercase tracking-[0.3em] text-muted-foreground/60 border-b border-white/5 pb-4">
-                  Navigation
-                </div>
-                
-                <div className="grid gap-2">
-                  {navLinks.map((link, i) => (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.05 }}
-                      key={link.name}
+      {/* Mobile Menu Overlay - Moved outside for full height */}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0, scale: 1.1, y: -20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 1.1, y: -20 }}
+            transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+            className="fixed inset-0 z-[55] lg:hidden bg-[#0a0a0a] pt-32 px-6 flex flex-col"
+          >
+            {/* Background Glows */}
+            <div className="absolute top-0 right-0 w-full h-full bg-primary/5 blur-[120px] pointer-events-none" />
+
+            <div className="space-y-10 relative z-10 overflow-y-auto pb-20">
+              <div className="grid gap-3">
+                {navLinks.map((link, i) => (
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    key={link.name}
+                  >
+                    <Link
+                      href={link.href}
+                      className="flex items-center justify-between p-5 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.08] transition-all group active:scale-[0.98]"
                     >
-                      <Link
-                        href={link.href}
-                        className="flex items-center justify-between p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all group"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-primary/20 group-hover:text-primary transition-colors">
-                            <link.icon className="w-5 h-5" />
-                          </div>
-                          <span className="text-sm font-black uppercase tracking-widest">{link.name}</span>
+                      <div className="flex items-center gap-5">
+                        <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center group-hover:bg-primary/20 group-hover:text-primary transition-colors">
+                          <link.icon className="w-6 h-6" />
                         </div>
-                        <ChevronRight className="w-4 h-4 text-muted group-hover:text-white transition-all group-hover:translate-x-1" />
-                      </Link>
-                    </motion.div>
-                  ))}
-                </div>
+                        <span className="text-base font-black uppercase tracking-[0.1em]">{link.name}</span>
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted group-hover:text-white transition-all group-hover:translate-x-1" />
+                    </Link>
+                  </motion.div>
+                ))}
+              </div>
 
-                <div className="pt-8 space-y-4">
-                  {user ? (
-                    <div className="space-y-4">
-                       <div className="flex items-center gap-4 p-4 rounded-2xl bg-primary/10 border border-primary/20">
-                        <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center text-white font-black text-xl">
-                          {user.email?.charAt(0).toUpperCase()}
+              <div className="space-y-4 pt-4">
+                {user ? (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-4 p-5 rounded-2xl bg-white/5 border border-white/5">
+                      <div className="w-14 h-14 rounded-2xl bg-linear-to-br from-primary to-secondary flex items-center justify-center text-white font-black text-2xl shadow-lg">
+                        {user.email?.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 overflow-hidden">
+                        <div className="text-sm font-black uppercase tracking-widest truncate">
+                          {user.user_metadata.full_name || 'Member'}
                         </div>
-                        <div className="overflow-hidden">
-                          <div className="text-xs font-black uppercase tracking-widest truncate">
-                            {user.user_metadata.full_name || 'Student'}
-                          </div>
-                          <div className="text-[10px] text-muted-foreground truncate italic">
-                            {user.email}
-                          </div>
+                        <div className="text-xs text-muted-foreground truncate opacity-60">
+                          {user.email}
                         </div>
                       </div>
-                      <button
-                        onClick={() => {
-                          setIsMenuOpen(false);
-                          setShowLogoutModal(true);
-                        }}
-                        className="w-full py-4 rounded-2xl bg-red-500/10 text-red-500 border border-red-500/20 font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2"
-                      >
-                        <LogOut className="w-4 h-4" />
-                        Terminate Session
-                      </button>
                     </div>
-                  ) : (
-                    <div className="grid gap-4">
-                      <Link
-                        href="/login"
-                        className="w-full py-4 rounded-2xl bg-white/5 border border-white/5 font-black uppercase tracking-widest text-[10px] text-center"
-                      >
-                        Sign Entry
-                      </Link>
-                      <Link
-                        href="/register"
-                        className="w-full py-4 rounded-2xl bg-primary text-white font-black uppercase tracking-widest text-[10px] text-center shadow-xl shadow-primary/20"
-                      >
-                        Join Academy
-                      </Link>
-                    </div>
-                  )}
-                </div>
+                    <button
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        setShowLogoutModal(true);
+                      }}
+                      className="w-full py-5 rounded-2xl bg-red-500 text-white font-black uppercase tracking-widest text-xs flex items-center justify-center gap-2 shadow-xl shadow-red-500/20 active:scale-95 transition-all"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sign Out
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid gap-4">
+                    <Link
+                      href="/login"
+                      className="w-full py-5 rounded-2xl bg-white/5 border border-white/5 font-black uppercase tracking-widest text-xs text-center active:scale-95 transition-all"
+                    >
+                      Login
+                    </Link>
+                    <Link
+                      href="/register"
+                      className="w-full py-5 rounded-2xl bg-primary text-white font-black uppercase tracking-widest text-xs text-center shadow-xl shadow-primary/20 active:scale-95 transition-all"
+                    >
+                      Create Account
+                    </Link>
+                  </div>
+                )}
               </div>
+            </div>
 
-              {/* Footer info */}
-              <div className="mt-auto pb-10 text-center">
-                <p className="text-[10px] font-medium text-muted-foreground/40 italic">
-                  &copy; 2024 ULurne Enterprise Academy
-                </p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </nav>
+            <div className="mt-auto py-8 text-center border-t border-white/5 bg-gradient-to-t from-[#0a0a0a] to-transparent">
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">
+                ULurne Academy &bull; Est. 2026
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <LogoutModal isOpen={showLogoutModal} onClose={() => setShowLogoutModal(false)} />
     </>

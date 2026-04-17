@@ -1,4 +1,5 @@
 import { GraduationCap, Camera, Send, Briefcase } from "lucide-react";
+import Image from "next/image";
 
 const SOCIAL_LINKS = [
   { Icon: Camera, label: "Instagram" },
@@ -6,7 +7,7 @@ const SOCIAL_LINKS = [
   { Icon: Briefcase, label: "LinkedIn" },
 ];
 
-const PRODUCT_LINKS = ["Courses", "Vertical Feed", "Tutoring System", "Pricing"];
+const PRODUCT_LINKS = ["Courses", "Vertical Feed", "Tutoring System"];
 const COMPANY_LINKS = ["Careers", "About Us", "Press Kit", "Privacy Policy"];
 
 export function Footer() {
@@ -15,11 +16,15 @@ export function Footer() {
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12">
         {/* Brand Column */}
         <div className="col-span-1 md:col-span-2">
-          <div className="flex items-center gap-2 mb-6 group cursor-pointer">
-            <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform">
-              <GraduationCap className="w-6 h-6 text-white" />
+          <div className="flex mb-5 items-center gap-2 group cursor-pointer">
+            <div className="relative group-hover:scale-110 transition-transform">
+              <Image
+                src="/logos/logo.png"
+                alt="ULurne Logo"
+                width={40}
+                height={40}
+              />
             </div>
-            <span className="text-2xl font-heading font-black tracking-tighter uppercase italic">ULurne</span>
           </div>
           <p className="text-muted text-sm font-medium leading-relaxed max-w-xs mb-8">
             The addictive education ecosystem for the next generation of African students. Built to make you grow.

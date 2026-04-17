@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Mail, Lock, Loader2, ArrowRight, User, EyeOff, Eye } from 'lucide-react';
-import { FaGoogle, FaGithub, FaFacebook, FaTwitter } from 'react-icons/fa';
+import { FaGoogle, FaGithub } from 'react-icons/fa';
+import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
 
@@ -33,7 +34,7 @@ export default function RegisterPage() {
 
       if (error) throw error;
       toast.success('Account created successfully! Welcome to ULurne.');
-      router.push('/');
+      router.push('/app');
     } catch (error: any) {
       toast.error(error.message || 'Failed to create account');
     } finally {
@@ -41,7 +42,7 @@ export default function RegisterPage() {
     }
   };
 
-  const handleSocialLogin = async (provider: 'google' | 'facebook' | 'twitter' | 'github') => {
+  const handleSocialLogin = async (provider: 'google' | 'github') => {
     try {
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
@@ -57,21 +58,29 @@ export default function RegisterPage() {
 
   return (
     <div className="glass-card p-10 md:p-14 rounded-[2.5rem] border border-white/10 shadow-2xl space-y-10">
-      <div className="text-center space-y-3">
-        <h1 className="text-4xl font-black font-outfit tracking-tight bg-linear-to-b from-white to-white/60 bg-clip-text text-transparent">
-          Start Journey
-        </h1>
-        <p className="text-muted-foreground font-medium">
-          Join 50k+ students mastering skills in minutes.
-        </p>
+      <div className="flex flex-col items-center text-center space-y-4">
+        <div className="relative w-20 h-20 mb-2">
+          <Image 
+            src="/logos/logo-icon.png" 
+            alt="ULurne Logo" 
+            fill
+            className="object-contain"
+          />
+        </div>
+        <div className="space-y-2">
+          <h1 className="text-4xl font-black font-outfit tracking-tight bg-linear-to-b from-white to-white/60 bg-clip-text text-transparent">
+            Start Journey
+          </h1>
+          <p className="text-muted-foreground font-medium">
+            Join 50k+ students mastering skills in minutes.
+          </p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-4">
         {[
           { id: 'google', icon: FaGoogle, color: 'hover:text-[#DB4437]' },
           { id: 'github', icon: FaGithub, color: 'hover:text-white' },
-          { id: 'facebook', icon: FaFacebook, color: 'hover:text-[#4267B2]' },
-          { id: 'twitter', icon: FaTwitter, color: 'hover:text-[#1DA1F2]' },
         ].map((platform) => (
           <platform.icon
             key={platform.id}
