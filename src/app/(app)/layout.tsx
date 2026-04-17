@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { useAppSelector } from '@/store/hooks';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { AppBottomNav } from '@/components/layout/app-bottom-nav';
+import { AppTopBar } from '@/components/layout/app-top-bar';
 
 const SIDEBAR_EXPANDED = 256;
 const SIDEBAR_COLLAPSED = 80;
@@ -51,22 +52,26 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-background text-white">
+    <div className="min-h-screen bg-background text-white overflow-hidden">
+      {/* Top Bar — now overlays the content for an immersive feel */}
+      <AppTopBar offset={offset} />
+
       {/* Fixed sidebar */}
       <AppSidebar
         isCollapsed={isSidebarCollapsed}
         onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
       />
 
-      {/* Main content — paddingLeft matches sidebar width exactly */}
+      {/* Main content — immersive by default */}
       <main
         style={{
           paddingLeft: `${offset}px`,
           transition: 'padding-left 300ms ease',
-          minHeight: '100vh',
+          height: '100vh',
         }}
+        className="relative"
       >
-        <div style={{ minHeight: '100vh', paddingBottom: isDesktop ? 0 : '6rem' }}>
+        <div className="h-full">
           {children}
         </div>
       </main>
