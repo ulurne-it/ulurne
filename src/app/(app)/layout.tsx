@@ -7,6 +7,8 @@ import { useAppSelector } from '@/store/hooks';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { AppBottomNav } from '@/components/layout/app-bottom-nav';
 import { AppTopBar } from '@/components/layout/app-top-bar';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 const SIDEBAR_EXPANDED = 256;
 const SIDEBAR_COLLAPSED = 80;
@@ -19,10 +21,44 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
 
-  // Redirect unauthenticated users to login
+  // 1. Guard: Redirect unauthenticated users to login
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
+    }
+  }, [user, loading, router]);
+
+  // 2. Security Guard: Absolute MFA Enforcement
+  useEffect(() => {
+    async function checkMfa() {
+      if (!user || loading) return;
+
+      try {
+         const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+         const { data: factors } = await supabase.auth.mfa.listFactors();
+         const hasVerifiedFactor = factors?.all?.some(f => f.status === 'verified');
+         
+         const { data: settings } = await supabase
+           .from('user_settings')
+           .select('two_factor_enabled')
+           .eq('user_id', user.id)
+           .maybeSingle();
+
+         const forceMfa = hasVerifiedFactor || settings?.two_factor_enabled === true;
+
+         // IF forced AND not verified in THIS session, KICK THEM OUT
+         if (forceMfa && aalData?.currentLevel !== 'aal2') {
+           console.log('MFA GUARD: Access Blocked - Redirecting to Security Vault');
+           router.push('/login?mfa=true');
+           toast.info('Security Protocol: Verification Required');
+         }
+      } catch (err) {
+         console.error('MFA Guard Error:', err);
+      }
+    }
+
+    if (user && !loading) {
+      checkMfa();
     }
   }, [user, loading, router]);
 

@@ -27,6 +27,7 @@ export function AppTopBar({ offset = 0 }: AppTopBarProps) {
                 alt="ULurne"
                 width={24}
                 height={24}
+                priority
                 className="object-contain"
               />
             </div>

@@ -62,12 +62,12 @@ export function EditProfileForm({ userId, initialValues, onClose, onSave }: Edit
 
     // Basic validation
     if (!file.type.startsWith('image/')) {
-      toast.error('Please upload an image file');
+      toast.error('Format Error: Please upload a valid image file');
       return;
     }
 
     if (file.size > 2 * 1024 * 1024) {
-      toast.error('Image must be less than 2MB');
+      toast.error('Constraint Error: Academy assets must be under 2MB');
       return;
     }
 
@@ -88,10 +88,10 @@ export function EditProfileForm({ userId, initialValues, onClose, onSave }: Edit
         .getPublicUrl(filePath);
 
       setValue('avatar_url', publicUrl);
-      toast.success('Avatar uploaded! Click save to apply changes.');
+      toast.success('Asset Uploaded: Click save to synchronize changes');
     } catch (error: any) {
       console.error('Upload error:', error);
-      toast.error('Failed to upload image: ' + error.message);
+      toast.error('Asset Transfer Failed: ' + error.message);
     } finally {
       setIsUploading(false);
     }

@@ -14,9 +14,9 @@ export function LogoutModal({ isOpen, onClose }: LogoutModalProps) {
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) {
-      toast.error(error.message);
+      toast.error('Termination Error: ' + error.message);
     } else {
-      toast.success('Signed out successfully');
+      toast.success('Session Terminated Safely');
       onClose();
     }
   };
