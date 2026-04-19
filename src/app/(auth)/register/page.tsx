@@ -33,10 +33,10 @@ export default function RegisterPage() {
       });
 
       if (error) throw error;
-      toast.success('Account created successfully! Welcome to ULurne.');
+      toast.success('Account Infrastructure Deployed: Welcome to ULurne');
       router.push('/app');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to create account');
+      toast.error('Deployment Failure: ' + (error.message || 'System error during registration'));
     } finally {
       setLoading(false);
     }
@@ -48,11 +48,15 @@ export default function RegisterPage() {
         provider,
         options: {
           redirectTo: `${window.location.origin}/auth/callback`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
         },
       });
       if (error) throw error;
     } catch (error: any) {
-      toast.error(error.message || `Failed to sign in with ${provider}`);
+      toast.error(`External Identity Sync Failed: Check your ${provider} account`);
     }
   };
 

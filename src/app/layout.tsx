@@ -42,7 +42,25 @@ export default function RootLayout({
           <main className="flex-1 flex flex-col">
             {children}
           </main>
-          <Toaster position="top-center" richColors />
+          <Toaster 
+            position="bottom-right" 
+            theme="dark"
+            toastOptions={{
+              style: {
+                background: 'rgba(10, 10, 15, 0.9)',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: '24px',
+                padding: '16px 20px',
+                fontSize: '10px',
+                fontWeight: '900',
+                textTransform: 'uppercase',
+                letterSpacing: '0.15em',
+                color: '#fff',
+              },
+              className: 'font-heading italic',
+            }}
+          />
         </StoreProvider>
       </body>
     </html>

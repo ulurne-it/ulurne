@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppSelector } from '@/store/hooks';
+import { supabase } from '@/lib/supabase';
 
 export default function AuthLayout({
   children,
@@ -14,9 +15,28 @@ export default function AuthLayout({
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && user) {
-      router.push('/app');
+    async function checkAuthRedirect() {
+      if (!loading && user) {
+        // Check if MFA is required before redirecting to /app
+        const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+        const { data: factors } = await supabase.auth.mfa.listFactors();
+        const hasVerifiedFactor = factors?.all?.some(f => f.status === 'verified');
+        
+        const { data: settings } = await supabase
+          .from('user_settings')
+          .select('two_factor_enabled')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        const forceMfa = hasVerifiedFactor || settings?.two_factor_enabled === true;
+
+        if (!forceMfa || aalData?.currentLevel === 'aal2') {
+          router.push('/app');
+        }
+      }
     }
+
+    checkAuthRedirect();
   }, [user, loading, router]);
 
   if (loading) {
