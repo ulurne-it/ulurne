@@ -19,7 +19,7 @@ export function Hero() {
         >
           <div className="mb-8 inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md">
             <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-accent">Educational Revolution</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-accent">ULurne | Students Learning Media</span>
           </div>
 
           <h1 className="text-6xl md:text-8xl font-heading font-black leading-[0.95] mb-8 tracking-tighter">
