@@ -27,7 +27,7 @@ export function Footer() {
             </div>
           </div>
           <p className="text-muted text-sm font-medium leading-relaxed max-w-xs mb-8">
-            The addictive education ecosystem for the next generation of African students. Built to make you grow.
+            The addictive education ecosystem for the next generation of African students. The ultimate student learning media platform built to make you grow.
           </p>
           <div className="flex gap-4">
             {SOCIAL_LINKS.map(({ Icon, label }) => (

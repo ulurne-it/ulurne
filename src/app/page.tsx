@@ -10,9 +10,12 @@ import { Pricing } from "@/components/sections/pricing";
 import { FAQ } from "@/components/sections/faq";
 import { CTASection } from "@/components/sections/cta-section";
 
+import { JsonLd } from "@/components/seo/json-ld";
+
 export default function Home() {
   return (
     <div className="bg-background min-h-screen text-foreground selection:bg-primary/30">
+      <JsonLd />
       <Nav />
       <main>
         <Hero />
