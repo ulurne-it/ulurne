@@ -15,7 +15,7 @@ const outfit = Outfit({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://ulurne.com"),
+  metadataBase: new URL("https://www.ulurne.com"),
   title: {
     default: "ULurne | Students Learning Media & Addictive Education",
     template: "%s | ULurne"
@@ -75,7 +75,7 @@ export const metadata: Metadata = {
     },
   },
   alternates: {
-    canonical: "https://ulurne.com",
+    canonical: "https://www.ulurne.com",
   },
 };
 

@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://ulurne.com';
+  const baseUrl = 'https://www.ulurne.com';
 
   // In a real scenario, you might fetch dynamic routes (e.g., profiles, videos) from your DB
   // For now, we'll list the main public entry points.
