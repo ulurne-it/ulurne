@@ -7,14 +7,15 @@ interface ProfileStatsProps {
     videos: number;
     likes: number;
   };
+  onStatClick?: (type: 'followers' | 'following') => void;
 }
 
-export function ProfileStats({ stats }: ProfileStatsProps) {
+export function ProfileStats({ stats, onStatClick }: ProfileStatsProps) {
   const items = [
-    { label: 'Followers', value: stats.followers },
-    { label: 'Following', value: stats.following },
-    { label: 'Videos', value: stats.videos },
-    { label: 'Likes', value: stats.likes },
+    { label: 'Followers', value: stats.followers, type: 'followers' as const },
+    { label: 'Following', value: stats.following, type: 'following' as const },
+    { label: 'Videos', value: stats.videos, type: null },
+    { label: 'Likes', value: stats.likes, type: null },
   ];
 
   return (
@@ -22,7 +23,8 @@ export function ProfileStats({ stats }: ProfileStatsProps) {
       {items.map((item) => (
         <div 
           key={item.label}
-          className="flex flex-col items-center justify-center py-4 px-2 rounded-2xl bg-[#0a0a0f]/40 border border-white/5 backdrop-blur-md"
+          onClick={() => item.type && onStatClick?.(item.type)}
+          className={`flex flex-col items-center justify-center py-4 px-2 rounded-2xl bg-[#0a0a0f]/40 border border-white/5 backdrop-blur-md transition-all ${item.type ? 'cursor-pointer hover:bg-white/10 hover:border-white/20 active:scale-95' : ''}`}
         >
           <span className="text-xl font-black font-heading tracking-tighter italic">
             {item.value >= 1000 ? `${(item.value / 1000).toFixed(1)}K` : item.value}

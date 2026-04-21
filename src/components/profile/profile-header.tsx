@@ -2,6 +2,7 @@
 
 import { Settings, Share2, MapPin, Link as LinkIcon, Briefcase } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { UserAvatar } from '@/components/ui/user-avatar';
 import Link from 'next/link';
 
 interface ProfileHeaderProps {
@@ -26,25 +27,14 @@ export function ProfileHeader({
       <div className="flex flex-col items-center gap-6">
         {/* Avatar */}
         <div className="relative group">
-          <div className="w-32 h-32 rounded-[2.5rem] bg-linear-to-br from-primary via-secondary to-accent p-1 shadow-2xl shadow-primary/20 rotate-3 group-hover:rotate-6 transition-transform">
-            <div className="w-full h-full rounded-[2.3rem] bg-[#0a0a0f] overflow-hidden -rotate-3 group-hover:-rotate-6 transition-transform border-4 border-[#0a0a0f]">
-              {profile?.avatar_url || user?.user_metadata?.avatar_url ? (
-                <img 
-                  src={(profile?.avatar_url || user?.user_metadata?.avatar_url).includes('?') 
-                    ? `${profile?.avatar_url || user?.user_metadata?.avatar_url}&t=${profile?._ts || Date.now()}`
-                    : `${profile?.avatar_url || user?.user_metadata?.avatar_url}?t=${profile?._ts || Date.now()}`
-                  } 
-                  alt={profile?.full_name} 
-                  className="w-full h-full object-cover"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-4xl font-black text-white/50">
-                  {profile?.full_name?.charAt(0) || user?.email?.charAt(0).toUpperCase()}
-                </div>
-              )}
-            </div>
-          </div>
+          <UserAvatar 
+            src={(profile?.avatar_url || user?.user_metadata?.avatar_url) ? 
+              `${profile?.avatar_url || user?.user_metadata?.avatar_url}${ (profile?.avatar_url || user?.user_metadata?.avatar_url).includes('?') ? '&' : '?' }t=${profile?._ts || Date.now()}` : undefined
+            }
+            name={profile?.full_name || user?.user_metadata?.full_name}
+            size="xl"
+            className="group-hover:rotate-6"
+          />
           <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-xl bg-primary flex items-center justify-center text-white border-4 border-[#0a0a0f] shadow-lg">
             <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
           </div>

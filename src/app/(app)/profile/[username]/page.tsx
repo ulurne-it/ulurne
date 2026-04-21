@@ -11,6 +11,7 @@ import { EditProfileForm } from '@/components/profile/edit-profile-form';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
+import { FollowsModal } from '@/components/profile/follows-modal';
 
 export default function PublicProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = use(params);
@@ -24,6 +25,10 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userna
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [followsModal, setFollowsModal] = useState<{ isOpen: boolean; type: 'followers' | 'following' }>({
+    isOpen: false,
+    type: 'followers'
+  });
 
   const isOwnProfile = currentUser?.id === profile?.id;
 
@@ -200,7 +205,10 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userna
           onEditToggle={() => setIsEditOpen(true)}
         />
         
-        <ProfileStats stats={stats} />
+        <ProfileStats 
+          stats={stats} 
+          onStatClick={(type) => setFollowsModal({ isOpen: true, type })}
+        />
         
         <div className="pt-8">
           <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} />
@@ -230,6 +238,15 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userna
             initialValues={profile} 
             onClose={() => setIsEditOpen(false)} 
             onSave={handleUpdateProfile}
+          />
+        )}
+        
+        {followsModal.isOpen && (
+          <FollowsModal
+            userId={profile.id}
+            username={profile.username}
+            type={followsModal.type}
+            onClose={() => setFollowsModal(prev => ({ ...prev, isOpen: false }))}
           />
         )}
       </AnimatePresence>

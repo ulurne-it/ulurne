@@ -10,6 +10,7 @@ import { VideoGrid } from '@/components/profile/video-grid';
 import { EditProfileForm } from '@/components/profile/edit-profile-form';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { FollowsModal } from '@/components/profile/follows-modal';
 
 export default function ProfilePage() {
   const { user } = useAppSelector((state) => state.auth);
@@ -19,6 +20,10 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState('videos');
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [followsModal, setFollowsModal] = useState<{ isOpen: boolean; type: 'followers' | 'following' }>({
+    isOpen: false,
+    type: 'followers'
+  });
 
   useEffect(() => {
     if (user) {
@@ -164,7 +169,10 @@ export default function ProfilePage() {
           onEditToggle={() => setIsEditOpen(true)}
         />
 
-        <ProfileStats stats={stats} />
+        <ProfileStats 
+          stats={stats} 
+          onStatClick={(type) => setFollowsModal({ isOpen: true, type })}
+        />
 
         <div className="pt-8">
           <ProfileTabs activeTab={activeTab} onTabChange={setActiveTab} />
@@ -195,6 +203,15 @@ export default function ProfilePage() {
             initialValues={profile} 
             onClose={() => setIsEditOpen(false)} 
             onSave={handleUpdateProfile}
+          />
+        )}
+
+        {followsModal.isOpen && (
+          <FollowsModal
+            userId={profile.id}
+            username={profile.username}
+            type={followsModal.type}
+            onClose={() => setFollowsModal(prev => ({ ...prev, isOpen: false }))}
           />
         )}
       </AnimatePresence>
