@@ -3,6 +3,7 @@
 import { Bell, Search, User } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { UserAvatar } from '@/components/ui/user-avatar';
 import { useAppSelector } from '@/store/hooks';
 
 interface AppTopBarProps {
@@ -62,9 +63,11 @@ export function AppTopBar({ offset = 0 }: AppTopBarProps) {
 
           {/* User Profile */}
           <Link href="/profile" className="flex items-center gap-2.5 hover:bg-white/5 p-1 rounded-xl transition-all group">
-            <div className="w-8 h-8 rounded-lg bg-linear-to-br from-primary to-secondary flex items-center justify-center text-white font-black text-xs shadow-lg shadow-primary/20 group-hover:scale-105 transition-all">
-              {user?.email?.charAt(0).toUpperCase() || 'U'}
-            </div>
+            <UserAvatar 
+              src={user?.user_metadata?.avatar_url} 
+              name={user?.user_metadata?.full_name || user?.email} 
+              size="sm" 
+            />
             <div className="hidden md:block">
               <p className="text-[9px] font-black uppercase tracking-widest leading-none mb-0.5">
                 {user?.user_metadata.full_name?.split(' ')[0] || 'Member'}
