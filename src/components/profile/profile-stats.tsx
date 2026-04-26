@@ -14,7 +14,7 @@ export function ProfileStats({ stats, onStatClick }: ProfileStatsProps) {
   const items = [
     { label: 'Followers', value: stats.followers, type: 'followers' as const },
     { label: 'Following', value: stats.following, type: 'following' as const },
-    { label: 'Videos', value: stats.videos, type: null },
+    { label: 'Content', value: stats.videos, type: null },
     { label: 'Likes', value: stats.likes, type: null },
   ];
 
