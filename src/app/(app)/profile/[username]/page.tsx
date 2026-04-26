@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { FollowsModal } from '@/components/profile/follows-modal';
+import { ProfileFeedOverlay } from '@/components/profile/profile-feed-overlay';
 
 export default function PublicProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = use(params);
@@ -21,7 +22,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userna
   const [profile, setProfile] = useState<any>(null);
   const [videos, setVideos] = useState<any[]>([]);
   const [stats, setStats] = useState({ followers: 0, following: 0, videos: 0, likes: 0 });
-  const [activeTab, setActiveTab] = useState('videos');
+  const [activeTab, setActiveTab] = useState('feed');
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -30,6 +31,8 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userna
     type: 'followers'
   });
 
+  const [selectedVideoIndex, setSelectedVideoIndex] = useState<number | null>(null);
+
   const isOwnProfile = currentUser?.id === profile?.id;
 
   useEffect(() => {
@@ -37,7 +40,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userna
   }, [username]);
 
   useEffect(() => {
-    if (profile?.id && currentUser?.id) {
+    if (profile?.id) {
        checkFollowStatus();
        fetchVideos();
        fetchStats();
@@ -69,14 +72,54 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userna
   };
 
   const fetchVideos = async () => {
-    const { data } = await supabase
-      .from('videos')
-      .select('*')
-      .eq('user_id', profile.id)
-      .order('created_at', { ascending: false });
-    
-    setVideos(data || []);
-    setStats(prev => ({ ...prev, videos: data?.length || 0 }));
+    if (!profile?.id) return;
+    try {
+      const [vRes, cRes] = await Promise.all([
+        supabase.from('videos').select('*').eq('user_id', profile.id).order('created_at', { ascending: false }),
+        supabase.from('content').select('*, profiles(username, full_name, avatar_url), series(title)').eq('creator_id', profile.id).order('created_at', { ascending: false })
+      ]);
+
+      const combined = [
+        ...(cRes.data || []),
+        ...(vRes.data || []).map(v => ({ 
+          ...v, 
+          type: 'video_short', 
+          title: v.title || 'Legacy Bite',
+          media_url: v.video_url 
+        })),
+      ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      // Fetch thumbnails for galleries
+      const galleryIds = combined.filter(i => i.type === 'image_gallery').map(i => i.id);
+      if (galleryIds.length > 0) {
+        const { data: thumbs } = await supabase
+          .from('content_gallery')
+          .select('content_id, image_url')
+          .in('content_id', galleryIds)
+          .order('display_order', { ascending: true });
+        
+        if (thumbs) {
+          const thumbMap = thumbs.reduce((acc: any, t: any) => {
+             if (!acc[t.content_id]) acc[t.content_id] = t.image_url;
+             return acc;
+          }, {});
+          
+          const finalVideos = combined.map(item => ({
+            ...item,
+            thumbnail_url: item.thumbnail_url || thumbMap[item.id]
+          }));
+          setVideos(finalVideos);
+        } else {
+          setVideos(combined);
+        }
+      } else {
+        setVideos(combined);
+      }
+      
+      setStats(prev => ({ ...prev, videos: combined.length }));
+    } catch (err) {
+      console.error('Error fetching videos:', err);
+    }
   };
 
   const fetchStats = async () => {
@@ -220,8 +263,13 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userna
                exit={{ opacity: 0, scale: 0.98 }}
                transition={{ duration: 0.2 }}
              >
-               {activeTab === 'videos' && <VideoGrid videos={videos} />}
-               {activeTab !== 'videos' && (
+               {activeTab === 'feed' && (
+                 <VideoGrid 
+                   videos={videos} 
+                   onVideoClick={(index) => setSelectedVideoIndex(index)}
+                 />
+               )}
+               {activeTab !== 'feed' && (
                  <div className="flex flex-col items-center justify-center py-20 opacity-20">
                     <p className="font-black uppercase tracking-widest text-xs">Nothing here yet</p>
                  </div>
@@ -247,6 +295,15 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userna
             username={profile.username}
             type={followsModal.type}
             onClose={() => setFollowsModal(prev => ({ ...prev, isOpen: false }))}
+          />
+        )}
+
+        {selectedVideoIndex !== null && (
+          <ProfileFeedOverlay 
+            isOpen={true} 
+            videos={videos.map(v => ({ ...v, profiles: profile }))} 
+            initialIndex={selectedVideoIndex} 
+            onClose={() => setSelectedVideoIndex(null)} 
           />
         )}
       </AnimatePresence>

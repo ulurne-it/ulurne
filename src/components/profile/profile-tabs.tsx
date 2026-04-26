@@ -9,9 +9,9 @@ interface ProfileTabsProps {
 
 export function ProfileTabs({ activeTab, onTabChange }: ProfileTabsProps) {
   const tabs = [
-    { id: 'videos', label: 'Bites' },
-    { id: 'liked', label: 'Liked' },
-    { id: 'saved', label: 'Series' },
+    { id: 'feed', label: 'Feed' },
+    { id: 'laboratory', label: 'Laboratory' },
+    { id: 'saved', label: 'Saved' },
   ];
 
   return (
