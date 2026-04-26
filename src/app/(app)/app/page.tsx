@@ -1,113 +1,205 @@
 'use client';
 
-import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Heart, MessageCircle, Share2, Bookmark, Music, UserPlus } from 'lucide-react';
-
-const STATIC_VIDEOS = [
-  {
-    id: 1,
-    creator: '@design_master',
-    description: 'Learn the basics of Glassmorphism in 60 seconds! 🎨 #Design #WebDev',
-    song: 'Original Sound - Design Master',
-    likes: '128.4K',
-    comments: '1.2K',
-    saves: '45.2K',
-    shares: '12K',
-    color: 'bg-indigo-600',
-  },
-  {
-    id: 2,
-    creator: '@code_queen',
-    description: 'Next.js 16 is here! Top 3 features you NEED to know. 🚀 #NextJS #Programming',
-    song: 'Future Beats - Code Queen',
-    likes: '89.2K',
-    comments: '842',
-    saves: '32.1K',
-    shares: '8K',
-    color: 'bg-emerald-600',
-  },
-  {
-    id: 3,
-    creator: '@math_wizard',
-    description: 'Calculus made easy: The Power Rule in under a minute! 📐 #Math #Education',
-    song: 'Lofi Study Session - Math Wizard',
-    likes: '245K',
-    comments: '3.5K',
-    saves: '120K',
-    shares: '20K',
-    color: 'bg-amber-600',
-  },
-];
+import { useState, useRef, useEffect } from 'react';
+import { ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { toast } from 'sonner';
+import { VideoPlayer } from '@/components/feed/video-player';
+import { GallerySlider } from '@/components/feed/gallery-slider';
+import { FeedSidebar } from '@/components/feed/feed-sidebar';
+import { FeedContentInfo } from '@/components/feed/feed-content-info';
 
 export default function FeedPage() {
-  return (
-    <div className="h-screen overflow-y-scroll snap-y snap-mandatory scroll-smooth hide-scrollbar bg-black">
-      {STATIC_VIDEOS.map((video) => (
-        <section
-          key={video.id}
-          className="h-screen w-full snap-start relative flex flex-col justify-end"
-        >
-          {/* Background Placeholder for Video */}
-          <div className={`absolute inset-0 ${video.color} opacity-20`} />
-          <div className="absolute inset-0 bg-linear-to-b from-black/20 via-transparent to-black/80" />
+  const [videos, setVideos] = useState<any[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [galleryImages, setGalleryImages] = useState<Record<string, any[]>>({});
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const PAGE_SIZE = 5;
 
-          {/* Content Overlay */}
-          <div className="relative z-10 flex w-full p-6 pb-24 md:pb-8 lg:pb-12 h-fit">
-            <div className="flex-1 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-white/10 border border-white/20 backdrop-blur-md flex items-center justify-center font-black">
-                  {video.creator.charAt(1).toUpperCase()}
-                </div>
-                <span className="font-black text-lg">{video.creator}</span>
-                <button className="bg-primary px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest">
-                  Connect
-                </button>
-              </div>
-              <p className="text-sm max-w-[80%] leading-relaxed">
-                {video.description}
-              </p>
-              <div className="flex items-center gap-2 text-xs text-muted">
-                <Music className="w-3 h-3" />
-                <span className="truncate max-w-[200px]">{video.song}</span>
-              </div>
-            </div>
+  const getPublicUrl = (path: string) => {
+    if (!path || typeof path !== 'string') return '';
+    if (path.startsWith('http')) return path;
+    const { data } = supabase.storage.from('academy-media').getPublicUrl(path);
+    return data.publicUrl;
+  };
 
-            {/* Interaction Buttons */}
-            <div className="flex flex-col gap-6 items-center">
-              <InteractionButton icon={Heart} label={video.likes} />
-              <InteractionButton icon={MessageCircle} label={video.comments} />
-              <InteractionButton icon={Bookmark} label={video.saves} />
-              <InteractionButton icon={Share2} label={video.shares} />
+  const fetchFeed = async (pageNum: number, isLoadMore = false) => {
+    try {
+      if (!isLoadMore) setLoading(true);
+      else setLoadingMore(true);
 
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
-                className="w-10 h-10 rounded-full border-4 border-white/20 p-1 mt-4"
-              >
-                <div className="w-full h-full rounded-full bg-linear-to-br from-primary to-secondary" />
-              </motion.div>
-            </div>
-          </div>
-        </section>
-      ))}
-    </div>
-  );
-}
+      const from = pageNum * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
 
-function InteractionButton({ icon: Icon, label }: { icon: any; label: string }) {
-  const [active, setActive] = useState(false);
+      const { data, error } = await supabase
+        .from('content')
+        .select('*, profiles(username, full_name, avatar_url), series(title)')
+        .eq('is_published', true)
+        .order('created_at', { ascending: false })
+        .range(from, to);
 
-  return (
-    <button
-      onClick={() => setActive(!active)}
-      className="flex flex-col items-center gap-1 group"
-    >
-      <div className={`w-12 h-12 rounded-full bg-white/5 backdrop-blur-md flex items-center justify-center border border-white/10 transition-all ${active ? 'bg-primary/20 text-primary border-primary/30' : 'group-hover:bg-white/10'
-        }`}>
-        <Icon className={`w-6 h-6 transition-transform group-active:scale-125 ${active ? 'fill-current' : ''}`} />
+      if (error) throw error;
+
+      if (data) {
+        if (isLoadMore) setVideos(prev => [...prev, ...data]);
+        else setVideos(data);
+
+        const galleryIds = data.filter(item => item.type === 'image_gallery').map(item => item.id);
+        if (galleryIds.length > 0) fetchGalleries(galleryIds);
+
+        setHasMore(data.length === PAGE_SIZE);
+      }
+    } catch (err) {
+      console.error('Error fetching feed:', err);
+      toast.error('Failed to sync academy feed');
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  const fetchGalleries = async (contentIds: string[]) => {
+    try {
+      const { data } = await supabase
+        .from('content_gallery')
+        .select('*')
+        .in('content_id', contentIds)
+        .order('display_order', { ascending: true });
+
+      if (data) {
+        const mapped = data.reduce((acc: any, img: any) => {
+          if (!acc[img.content_id]) acc[img.content_id] = [];
+          acc[img.content_id].push(img);
+          return acc;
+        }, {});
+        setGalleryImages(prev => ({ ...prev, ...mapped }));
+      }
+    } catch (err) {
+      console.error('Error fetching galleries:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchFeed(0);
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowDown' || e.key === 'PageDown') {
+        e.preventDefault();
+        scrollToIndex(Math.min(videos.length - 1, currentIndex + 1));
+      } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+        e.preventDefault();
+        scrollToIndex(Math.max(0, currentIndex - 1));
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentIndex, videos.length]);
+
+  const scrollToIndex = (index: number) => {
+    document.getElementById(`feed-item-${index}`)?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const onScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const index = Math.round(e.currentTarget.scrollTop / e.currentTarget.clientHeight);
+    if (index !== currentIndex) {
+      setCurrentIndex(index);
+      if (index >= videos.length - 2 && hasMore && !loadingMore) {
+        const nextPage = page + 1;
+        setPage(nextPage);
+        fetchFeed(nextPage, true);
+      }
+    }
+  };
+
+  if (loading && videos.length === 0) {
+    return (
+      <div className="h-screen w-full flex flex-col items-center justify-center bg-black gap-4">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        <p className="text-[10px] font-black uppercase tracking-[0.4em] animate-pulse text-white">Syncing Academy Feed...</p>
       </div>
-      <span className="text-[10px] font-black tracking-widest uppercase opacity-80">{label}</span>
-    </button>
+    );
+  }
+
+  return (
+    <div 
+      ref={containerRef}
+      onScroll={onScroll}
+      className="h-screen overflow-y-scroll snap-y snap-mandatory scroll-smooth hide-scrollbar bg-black relative"
+    >
+      {videos.map((item, index) => {
+        const isVideo = item.type?.startsWith('video');
+        const isGallery = item.type === 'image_gallery';
+        const isActive = index === currentIndex;
+
+        return (
+          <section
+            key={item.id}
+            id={`feed-item-${index}`}
+            className="h-screen w-full snap-start relative flex flex-col justify-end overflow-hidden"
+          >
+            <div className="absolute inset-0 w-full h-full bg-black">
+              {isVideo ? (
+                <VideoPlayer 
+                  src={getPublicUrl(item.media_url)} 
+                  isActive={isActive} 
+                />
+              ) : isGallery ? (
+                <GallerySlider 
+                  images={galleryImages[item.id] || []} 
+                  isActive={isActive}
+                  getPublicUrl={getPublicUrl}
+                />
+              ) : (
+                <img 
+                  src={getPublicUrl(item.media_url || item.thumbnail_url)} 
+                  className="w-full h-full object-contain" 
+                  alt=""
+                />
+              )}
+            </div>
+
+            <div className="absolute inset-0 bg-linear-to-b from-black/20 via-transparent to-black/90 pointer-events-none" />
+
+            <FeedContentInfo 
+              username={item.profiles?.username}
+              avatarUrl={item.profiles?.avatar_url}
+              type={item.type}
+              title={item.title}
+              description={item.description}
+            />
+
+            <FeedSidebar 
+              likes={item.likes_count || 0}
+              comments={item.comments_count || 0}
+              saves={item.saves_count || 0}
+            />
+          </section>
+        );
+      })}
+
+      <div className="fixed right-8 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-4 text-white/20 z-50">
+         <button 
+          onClick={() => scrollToIndex(Math.max(0, currentIndex - 1))}
+          disabled={currentIndex === 0}
+          className="p-2 hover:text-primary transition-colors disabled:opacity-10"
+         >
+          <ChevronUp className="w-8 h-8" />
+         </button>
+         <div className="h-20 w-[1px] bg-white/10 mx-auto" />
+         <button 
+          onClick={() => scrollToIndex(Math.min(videos.length - 1, currentIndex + 1))}
+          disabled={currentIndex === videos.length - 1 && !hasMore}
+          className="p-2 hover:text-primary transition-colors disabled:opacity-10"
+         >
+          <ChevronDown className="w-8 h-8" />
+         </button>
+      </div>
+    </div>
   );
 }

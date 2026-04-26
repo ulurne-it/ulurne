@@ -47,6 +47,13 @@ export function VideoGrid({ videos, onVideoClick }: VideoGridProps) {
                 alt={item.title} 
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
               />
+            ) : item.type?.startsWith('video') && item.media_url ? (
+              <video 
+                src={getPublicUrl(item.media_url)} 
+                className="w-full h-full object-cover"
+                preload="metadata"
+                muted
+              />
             ) : (
                <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-white/5 to-white/10">
                   {isGallery ? <ImageIcon className="w-8 h-8 opacity-20" /> : <Play className="w-8 h-8 opacity-20" />}
