@@ -7,16 +7,23 @@ interface FeedSidebarProps {
   likes: number;
   comments: number;
   saves: number;
+  isLiked?: boolean;
   onLike?: () => void;
   onComment?: () => void;
   onSave?: () => void;
   onShare?: () => void;
 }
 
-export function FeedSidebar({ likes, comments, saves, onLike, onComment, onSave, onShare }: FeedSidebarProps) {
+export function FeedSidebar({ likes, comments, saves, isLiked, onLike, onComment, onSave, onShare }: FeedSidebarProps) {
   return (
     <div className="absolute right-4 bottom-24 flex flex-col gap-6 items-center z-20">
-      <FeedActionButton icon={Heart} label={likes} onClick={onLike} />
+      <FeedActionButton 
+        icon={Heart} 
+        label={likes} 
+        onClick={onLike} 
+        active={isLiked}
+        activeClassName="text-primary fill-primary"
+      />
       <FeedActionButton icon={MessageCircle} label={comments} onClick={onComment} />
       <FeedActionButton icon={Bookmark} label={saves} onClick={onSave} />
       <FeedActionButton icon={Share2} label="Share" onClick={onShare} />
@@ -32,16 +39,28 @@ export function FeedSidebar({ likes, comments, saves, onLike, onComment, onSave,
   );
 }
 
-function FeedActionButton({ icon: Icon, label, onClick }: { icon: any; label: string | number; onClick?: () => void }) {
+function FeedActionButton({ 
+  icon: Icon, 
+  label, 
+  onClick, 
+  active, 
+  activeClassName 
+}: { 
+  icon: any; 
+  label: string | number; 
+  onClick?: () => void;
+  active?: boolean;
+  activeClassName?: string;
+}) {
   return (
     <button 
       onClick={onClick}
       className="flex flex-col items-center gap-1 group pointer-events-auto cursor-pointer"
     >
-      <div className="w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10 group-hover:bg-primary/20 group-hover:border-primary/30 transition-all">
-        <Icon className="w-6 h-6 text-white group-hover:text-primary transition-colors" />
+      <div className={`w-12 h-12 rounded-full bg-white/10 backdrop-blur-md flex items-center justify-center border border-white/10 group-hover:bg-primary/20 group-hover:border-primary/30 transition-all ${active ? 'border-primary/30 bg-primary/10' : ''}`}>
+        <Icon className={`w-6 h-6 transition-all ${active ? activeClassName : 'text-white group-hover:text-primary'}`} />
       </div>
-      <span className="text-[10px] font-black text-white/70 tracking-widest uppercase">{label}</span>
+      <span className={`text-[10px] font-black tracking-widest uppercase transition-colors ${active ? 'text-primary' : 'text-white/70'}`}>{label}</span>
     </button>
   );
 }

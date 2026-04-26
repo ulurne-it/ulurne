@@ -8,6 +8,8 @@ import { VideoPlayer } from '@/components/feed/video-player';
 import { GallerySlider } from '@/components/feed/gallery-slider';
 import { FeedSidebar } from '@/components/feed/feed-sidebar';
 import { FeedContentInfo } from '@/components/feed/feed-content-info';
+import { DoubleTapHeart } from '@/components/feed/double-tap-heart';
+import { useAppSelector } from '@/store/hooks';
 
 export default function FeedPage() {
   const [videos, setVideos] = useState<any[]>([]);
@@ -18,6 +20,8 @@ export default function FeedPage() {
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
+  const { user } = useAppSelector(state => state.auth);
   const PAGE_SIZE = 5;
 
   const getPublicUrl = (path: string) => {
@@ -85,7 +89,94 @@ export default function FeedPage() {
 
   useEffect(() => {
     fetchFeed(0);
+    
+    // Subscribe to content changes for real-time likes
+    const channel = supabase
+      .channel('feed-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'content' },
+        (payload) => {
+          setVideos(prev => prev.map(v => 
+            v.id === payload.new.id ? { ...v, likes_count: payload.new.likes_count } : v
+          ));
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
+
+  useEffect(() => {
+    if (user && videos.length > 0) {
+      fetchUserLikes();
+    }
+  }, [user, videos.length]);
+
+  const fetchUserLikes = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('content_likes')
+      .select('content_id')
+      .eq('user_id', user.id)
+      .in('content_id', videos.map(v => v.id));
+    
+    if (data) {
+      setLikedIds(new Set(data.map(d => d.content_id)));
+    }
+  };
+
+  const handleLike = async (contentId: string) => {
+    if (!user) {
+      toast.error('Please login to like');
+      return;
+    }
+
+    const isLiked = likedIds.has(contentId);
+    
+    // Optimistic Update
+    setLikedIds(prev => {
+      const next = new Set(prev);
+      if (isLiked) next.delete(contentId);
+      else next.add(contentId);
+      return next;
+    });
+
+    setVideos(prev => prev.map(v => 
+      v.id === contentId 
+        ? { ...v, likes_count: (v.likes_count || 0) + (isLiked ? -1 : 1) } 
+        : v
+    ));
+
+    try {
+      if (isLiked) {
+        await supabase
+          .from('content_likes')
+          .delete()
+          .match({ content_id: contentId, user_id: user.id });
+      } else {
+        await supabase
+          .from('content_likes')
+          .insert({ content_id: contentId, user_id: user.id });
+      }
+    } catch (err) {
+      console.error('Error toggling like:', err);
+      // Rollback on error
+      setLikedIds(prev => {
+        const next = new Set(prev);
+        if (isLiked) next.add(contentId);
+        else next.delete(contentId);
+        return next;
+      });
+      setVideos(prev => prev.map(v => 
+        v.id === contentId 
+          ? { ...v, likes_count: (v.likes_count || 0) + (isLiked ? 1 : -1) } 
+          : v
+      ));
+    }
+  };
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -130,7 +221,7 @@ export default function FeedPage() {
     <div 
       ref={containerRef}
       onScroll={onScroll}
-      className="h-screen overflow-y-scroll snap-y snap-mandatory scroll-smooth hide-scrollbar bg-black relative"
+      className="h-screen overflow-y-auto snap-y snap-mandatory scroll-smooth hide-scrollbar bg-black relative"
     >
       {videos.map((item, index) => {
         const isVideo = item.type?.startsWith('video');
@@ -144,24 +235,26 @@ export default function FeedPage() {
             className="h-screen w-full snap-start relative flex flex-col justify-end overflow-hidden"
           >
             <div className="absolute inset-0 w-full h-full bg-black">
-              {isVideo ? (
-                <VideoPlayer 
-                  src={getPublicUrl(item.media_url)} 
-                  isActive={isActive} 
-                />
-              ) : isGallery ? (
-                <GallerySlider 
-                  images={galleryImages[item.id] || []} 
-                  isActive={isActive}
-                  getPublicUrl={getPublicUrl}
-                />
-              ) : (
-                <img 
-                  src={getPublicUrl(item.media_url || item.thumbnail_url)} 
-                  className="w-full h-full object-contain" 
-                  alt=""
-                />
-              )}
+              <DoubleTapHeart onDoubleTap={() => !likedIds.has(item.id) && handleLike(item.id)}>
+                {isVideo ? (
+                  <VideoPlayer 
+                    src={getPublicUrl(item.media_url)} 
+                    isActive={isActive} 
+                  />
+                ) : isGallery ? (
+                  <GallerySlider 
+                    images={galleryImages[item.id] || []} 
+                    isActive={isActive}
+                    getPublicUrl={getPublicUrl}
+                  />
+                ) : (
+                  <img 
+                    src={getPublicUrl(item.media_url || item.thumbnail_url)} 
+                    className="w-full h-full object-contain" 
+                    alt=""
+                  />
+                )}
+              </DoubleTapHeart>
             </div>
 
             <div className="absolute inset-0 bg-linear-to-b from-black/20 via-transparent to-black/90 pointer-events-none" />
@@ -178,6 +271,8 @@ export default function FeedPage() {
               likes={item.likes_count || 0}
               comments={item.comments_count || 0}
               saves={item.saves_count || 0}
+              isLiked={likedIds.has(item.id)}
+              onLike={() => handleLike(item.id)}
             />
           </section>
         );

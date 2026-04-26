@@ -134,10 +134,18 @@ export default function PublicProfilePage({ params }: { params: Promise<{ userna
         .select('*', { count: 'exact', head: true })
         .eq('follower_id', profile.id);
 
+      const { data: contentLikes } = await supabase
+        .from('content')
+        .select('likes_count')
+        .eq('creator_id', profile.id);
+
+      const totalLikes = contentLikes?.reduce((acc, curr) => acc + (curr.likes_count || 0), 0) || 0;
+
       setStats(prev => ({ 
         ...prev, 
         followers: followersCount || 0, 
-        following: followingCount || 0 
+        following: followingCount || 0,
+        likes: totalLikes
       }));
     } catch (err) {
       console.error('Error fetching stats:', err);

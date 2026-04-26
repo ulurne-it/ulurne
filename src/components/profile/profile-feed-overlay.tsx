@@ -8,6 +8,9 @@ import { VideoPlayer } from '@/components/feed/video-player';
 import { GallerySlider } from '@/components/feed/gallery-slider';
 import { FeedSidebar } from '@/components/feed/feed-sidebar';
 import { FeedContentInfo } from '@/components/feed/feed-content-info';
+import { DoubleTapHeart } from '@/components/feed/double-tap-heart';
+import { useAppSelector } from '@/store/hooks';
+import { toast } from 'sonner';
 
 interface ProfileFeedOverlayProps {
   isOpen: boolean;
@@ -20,6 +23,9 @@ export function ProfileFeedOverlay({ isOpen, onClose, videos, initialIndex }: Pr
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [galleryImages, setGalleryImages] = useState<Record<string, any[]>>({});
   const containerRef = useRef<HTMLDivElement>(null);
+  const [items, setItems] = useState(videos);
+  const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
+  const { user } = useAppSelector(state => state.auth);
 
   useEffect(() => {
     if (isOpen && containerRef.current) {
@@ -27,8 +33,107 @@ export function ProfileFeedOverlay({ isOpen, onClose, videos, initialIndex }: Pr
       element?.scrollIntoView({ behavior: 'instant' });
       setCurrentIndex(initialIndex);
       fetchGalleries();
+      
+      // Lock body scroll
+      document.body.style.overflow = 'hidden';
+
+      // Set initial items from prop
+      setItems(videos);
     }
-  }, [isOpen, initialIndex]);
+
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen, initialIndex, videos]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    // Real-time subscription
+    const channel = supabase
+      .channel('profile-feed-realtime')
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'content' },
+        (payload) => {
+          setItems(prev => prev.map(v => 
+            v.id === payload.new.id ? { ...v, likes_count: payload.new.likes_count } : v
+          ));
+        }
+      )
+      .subscribe();
+
+    if (user && items.length > 0) {
+      fetchUserLikes();
+    }
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isOpen, user, items.length]);
+
+  const fetchUserLikes = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('content_likes')
+      .select('content_id')
+      .eq('user_id', user.id)
+      .in('content_id', items.map(v => v.id));
+    
+    if (data) {
+      setLikedIds(new Set(data.map(d => d.content_id)));
+    }
+  };
+
+  const handleLike = async (contentId: string) => {
+    if (!user) {
+      toast.error('Please login to like');
+      return;
+    }
+
+    const isLiked = likedIds.has(contentId);
+    
+    // Optimistic Update
+    setLikedIds(prev => {
+      const next = new Set(prev);
+      if (isLiked) next.delete(contentId);
+      else next.add(contentId);
+      return next;
+    });
+
+    setItems(prev => prev.map(v => 
+      v.id === contentId 
+        ? { ...v, likes_count: (v.likes_count || 0) + (isLiked ? -1 : 1) } 
+        : v
+    ));
+
+    try {
+      if (isLiked) {
+        await supabase
+          .from('content_likes')
+          .delete()
+          .match({ content_id: contentId, user_id: user.id });
+      } else {
+        await supabase
+          .from('content_likes')
+          .insert({ content_id: contentId, user_id: user.id });
+      }
+    } catch (err) {
+      console.error('Error toggling like:', err);
+      // Rollback
+      setLikedIds(prev => {
+        const next = new Set(prev);
+        if (isLiked) next.add(contentId);
+        else next.delete(contentId);
+        return next;
+      });
+      setItems(prev => prev.map(v => 
+        v.id === contentId 
+          ? { ...v, likes_count: (v.likes_count || 0) + (isLiked ? 1 : -1) } 
+          : v
+      ));
+    }
+  };
 
   // Keyboard Listeners for Desktop Navigation
   useEffect(() => {
@@ -94,7 +199,7 @@ export function ProfileFeedOverlay({ isOpen, onClose, videos, initialIndex }: Pr
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
-      className="fixed inset-0 z-50 bg-black flex items-center justify-center"
+      className="fixed inset-0 z-[100] bg-black flex items-center justify-center"
     >
       <button 
         onClick={onClose}
@@ -105,13 +210,13 @@ export function ProfileFeedOverlay({ isOpen, onClose, videos, initialIndex }: Pr
 
       <div 
         ref={containerRef}
-        className="h-full w-full max-w-md mx-auto overflow-y-scroll snap-y snap-mandatory scroll-smooth hide-scrollbar relative bg-[#0a0a0f]"
+        className="h-full w-full max-w-md mx-auto overflow-y-auto snap-y snap-mandatory scroll-smooth hide-scrollbar relative bg-[#0a0a0f]"
         onScroll={(e) => {
           const index = Math.round(e.currentTarget.scrollTop / e.currentTarget.clientHeight);
           if (index !== currentIndex) setCurrentIndex(index);
         }}
       >
-        {videos.map((item, index) => {
+        {items.map((item, index) => {
           const isVideo = item.type?.startsWith('video');
           const isGallery = item.type === 'image_gallery';
           const isActive = index === currentIndex;
@@ -123,24 +228,26 @@ export function ProfileFeedOverlay({ isOpen, onClose, videos, initialIndex }: Pr
               className="h-full w-full snap-start relative flex flex-col justify-end overflow-hidden"
             >
               <div className="absolute inset-0 w-full h-full bg-black">
-                {isVideo ? (
-                  <VideoPlayer 
-                    src={getPublicUrl(item.media_url)} 
-                    isActive={isActive} 
-                  />
-                ) : isGallery ? (
-                  <GallerySlider 
-                    images={galleryImages[item.id] || []} 
-                    isActive={isActive}
-                    getPublicUrl={getPublicUrl}
-                  />
-                ) : (
-                  <img 
-                    src={getPublicUrl(item.media_url || item.thumbnail_url)} 
-                    className="w-full h-full object-contain" 
-                    alt=""
-                  />
-                )}
+                <DoubleTapHeart onDoubleTap={() => !likedIds.has(item.id) && handleLike(item.id)}>
+                  {isVideo ? (
+                    <VideoPlayer 
+                      src={getPublicUrl(item.media_url)} 
+                      isActive={isActive} 
+                    />
+                  ) : isGallery ? (
+                    <GallerySlider 
+                      images={galleryImages[item.id] || []} 
+                      isActive={isActive}
+                      getPublicUrl={getPublicUrl}
+                    />
+                  ) : (
+                    <img 
+                      src={getPublicUrl(item.media_url || item.thumbnail_url)} 
+                      className="w-full h-full object-contain" 
+                      alt=""
+                    />
+                  )}
+                </DoubleTapHeart>
               </div>
 
               <div className="absolute inset-0 bg-linear-to-b from-black/20 via-transparent to-black/90 pointer-events-none" />
@@ -157,6 +264,8 @@ export function ProfileFeedOverlay({ isOpen, onClose, videos, initialIndex }: Pr
                 likes={item.likes_count || 0}
                 comments={item.comments_count || 0}
                 saves={item.saves_count || 0}
+                isLiked={likedIds.has(item.id)}
+                onLike={() => handleLike(item.id)}
               />
             </section>
           );
@@ -173,8 +282,8 @@ export function ProfileFeedOverlay({ isOpen, onClose, videos, initialIndex }: Pr
          </button>
          <div className="h-20 w-[1px] bg-white/10 mx-auto" />
          <button 
-          onClick={() => scrollToIndex(Math.min(videos.length - 1, currentIndex + 1))}
-          disabled={currentIndex === videos.length - 1}
+          onClick={() => scrollToIndex(Math.min(items.length - 1, currentIndex + 1))}
+          disabled={currentIndex === items.length - 1}
           className="p-2 hover:text-primary transition-colors disabled:opacity-10"
          >
           <ChevronDown className="w-8 h-8" />
