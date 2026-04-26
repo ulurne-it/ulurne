@@ -12,11 +12,14 @@ CREATE TABLE IF NOT EXISTS content_views (
     UNIQUE(content_id, user_id)
 );
 
--- 2. Add views_count to content
+-- 2. Add views_count to content and videos
 DO $$ 
 BEGIN 
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='content' AND column_name='views_count') THEN
         ALTER TABLE content ADD COLUMN views_count INTEGER DEFAULT 0;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='videos' AND column_name='views_count') THEN
+        ALTER TABLE videos ADD COLUMN views_count INTEGER DEFAULT 0;
     END IF;
 END $$;
 
