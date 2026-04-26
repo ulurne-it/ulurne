@@ -8,6 +8,7 @@ interface VideoPlayerProps {
   src: string;
   isActive: boolean;
   onTimeUpdate?: (progress: number) => void;
+  onView?: () => void;
   onSeek?: (progress: number) => void;
 }
 
@@ -15,13 +16,15 @@ interface VideoPlayerProps {
 // Set to false by default as requested, but browsers may block first-play audio
 let globalMuted = false;
 
-export function VideoPlayer({ src, isActive, onTimeUpdate }: VideoPlayerProps) {
+export function VideoPlayer({ src, isActive, onTimeUpdate, onView }: VideoPlayerProps) {
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(globalMuted);
   const [progress, setProgress] = useState(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const seekerRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const watchTimeRef = useRef(0);
+  const hasViewedRef = useRef(false);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -43,6 +46,9 @@ export function VideoPlayer({ src, isActive, onTimeUpdate }: VideoPlayerProps) {
       video.pause();
       video.currentTime = 0;
       setIsPlaying(true);
+      // Reset watch time for this video if it becomes inactive
+      watchTimeRef.current = 0;
+      hasViewedRef.current = false;
     }
   }, [isActive, src, isMuted]);
 
@@ -82,6 +88,15 @@ export function VideoPlayer({ src, isActive, onTimeUpdate }: VideoPlayerProps) {
     const p = (video.currentTime / video.duration) * 100;
     setProgress(p);
     onTimeUpdate?.(p);
+
+    // Track watch time for views (5 seconds)
+    if (isActive && isPlaying && !hasViewedRef.current) {
+       watchTimeRef.current += 0.25; // Approximate since timeupdate fires ~4 times per second
+       if (watchTimeRef.current >= 5) {
+         hasViewedRef.current = true;
+         onView?.();
+       }
+    }
   };
 
   const handleSeek = (e: any) => {

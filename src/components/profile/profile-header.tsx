@@ -1,6 +1,6 @@
 'use client';
 
-import { Settings, Share2, MapPin, Link as LinkIcon, Briefcase } from 'lucide-react';
+import { Settings, Share2, MapPin, Link as LinkIcon, Briefcase, BarChart2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { UserAvatar } from '@/components/ui/user-avatar';
 import Link from 'next/link';
@@ -100,6 +100,13 @@ export function ProfileHeader({
               >
                 Edit Profile
               </button>
+              <Link
+                href="/profile/analytics"
+                className="p-4 rounded-2xl bg-white/5 border border-white/5 text-white hover:bg-white/10 transition-all active:scale-90"
+                title="View Insights"
+              >
+                <BarChart2 className="w-5 h-5" />
+              </Link>
               <Link
                 href="/settings"
                 className="p-4 rounded-2xl bg-white/5 border border-white/5 text-white hover:bg-white/10 transition-all active:scale-90"

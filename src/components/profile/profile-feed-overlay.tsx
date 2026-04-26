@@ -57,7 +57,7 @@ export function ProfileFeedOverlay({ isOpen, onClose, videos, initialIndex }: Pr
         { event: 'UPDATE', schema: 'public', table: 'content' },
         (payload) => {
           setItems(prev => prev.map(v => 
-            v.id === payload.new.id ? { ...v, likes_count: payload.new.likes_count } : v
+            v.id === payload.new.id ? { ...v, likes_count: payload.new.likes_count, views_count: payload.new.views_count } : v
           ));
         }
       )
@@ -132,6 +132,20 @@ export function ProfileFeedOverlay({ isOpen, onClose, videos, initialIndex }: Pr
           ? { ...v, likes_count: (v.likes_count || 0) + (isLiked ? 1 : -1) } 
           : v
       ));
+    }
+  };
+
+  const handleView = async (contentId: string) => {
+    try {
+      setItems(prev => prev.map(v => 
+        v.id === contentId ? { ...v, views_count: (v.views_count || 0) + 1 } : v
+      ));
+
+      await supabase
+        .from('content_views')
+        .insert({ content_id: contentId, user_id: user?.id });
+    } catch (err) {
+      // UNIQUE handles duplicates
     }
   };
 
@@ -233,12 +247,14 @@ export function ProfileFeedOverlay({ isOpen, onClose, videos, initialIndex }: Pr
                     <VideoPlayer 
                       src={getPublicUrl(item.media_url)} 
                       isActive={isActive} 
+                      onView={() => handleView(item.id)}
                     />
                   ) : isGallery ? (
                     <GallerySlider 
                       images={galleryImages[item.id] || []} 
                       isActive={isActive}
                       getPublicUrl={getPublicUrl}
+                      onView={() => handleView(item.id)}
                     />
                   ) : (
                     <img 

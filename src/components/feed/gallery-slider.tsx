@@ -8,10 +8,22 @@ interface GallerySliderProps {
   images: any[];
   isActive: boolean;
   getPublicUrl: (path: string) => string;
+  onView?: () => void;
 }
 
-export function GallerySlider({ images, isActive, getPublicUrl }: GallerySliderProps) {
+export function GallerySlider({ images, isActive, getPublicUrl, onView }: GallerySliderProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [hasViewed, setHasViewed] = useState(false);
+
+  useEffect(() => {
+    if (isActive && images.length > 0 && !hasViewed) {
+      setHasViewed(true);
+      onView?.();
+    }
+    if (!isActive) {
+      setHasViewed(false);
+    }
+  }, [isActive, images.length, hasViewed]);
 
   // Autoswipe logic
   useEffect(() => {
