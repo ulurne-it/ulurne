@@ -72,7 +72,7 @@ export function VideoGrid({ videos, onVideoClick }: VideoGridProps) {
 
             <div className="absolute bottom-2 left-2 flex items-center gap-1 text-white font-bold text-[10px] md:text-xs drop-shadow-md">
               {isGallery ? <ImageIcon className="w-3 h-3" /> : <Play className="w-3 h-3 fill-white" />}
-              {item.view_count >= 1000 ? `${(item.view_count / 1000).toFixed(1)}K` : item.view_count || 0}
+              {item.views_count >= 1000 ? `${(item.views_count / 1000).toFixed(1)}K` : item.views_count || 0}
             </div>
 
             <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity" />
