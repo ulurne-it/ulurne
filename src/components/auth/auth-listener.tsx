@@ -9,15 +9,7 @@ export function AuthListener() {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
-    // Check active session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      dispatch(setAuth({ 
-        user: session?.user ?? null, 
-        session: session ?? null 
-      }));
-    });
-
-    // Listen for auth changes
+    // Consolidated listener that handles both initial session and subsequent changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       dispatch(setAuth({ 
         user: session?.user ?? null, 

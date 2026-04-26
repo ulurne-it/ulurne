@@ -34,6 +34,7 @@ export function AppTopBar({ offset = 0 }: AppTopBarProps) {
                   height={24}
                   priority
                   className="object-contain"
+                  style={{ height: 'auto' }}
                 />
               </div>
               <span className="font-heading font-black text-xs tracking-tighter uppercase italic text-shimmer">

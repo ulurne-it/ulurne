@@ -41,6 +41,7 @@ export function AppSidebar({ isCollapsed, onToggle }: SidebarProps) {
                 alt="ULurne Logo"
                 width={24}
                 height={24}
+                style={{ height: 'auto' }}
               />
             </div>
             {!isCollapsed && (

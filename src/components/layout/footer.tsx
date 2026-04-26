@@ -23,6 +23,7 @@ export function Footer() {
                 alt="ULurne Logo"
                 width={40}
                 height={40}
+                style={{ height: 'auto' }}
               />
             </div>
           </div>

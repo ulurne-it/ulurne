@@ -12,10 +12,10 @@ import {
 import { toast } from 'sonner';
 
 const FILTERS = [
-  { id: 'all', name: 'Discovery Feed', icon: Sparkles },
-  { id: 'video_long', name: 'Masterclasses', icon: BookOpen },
-  { id: 'video_short', name: 'Academy Insights', icon: Film },
-  { id: 'image_gallery', name: 'Visual Exhibits', icon: ImageIcon },
+  { id: 'all', name: 'My Insights', icon: Sparkles },
+  { id: 'video_long', name: 'My Tutorials', icon: BookOpen },
+  { id: 'video_short', name: 'My Insights', icon: Film },
+  { id: 'image_gallery', name: 'My Exhibits', icon: ImageIcon },
 ];
 
 export default function LibraryPage() {
@@ -33,13 +33,22 @@ export default function LibraryPage() {
       if (!isLoadMore) setLoading(true);
       else setLoadingMore(true);
 
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        setItems([]);
+        setLoading(false);
+        setLoadingMore(false);
+        return;
+      }
+
       const from = pageNum * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
 
       let query = supabase
         .from('content')
         .select('*, profiles(username, full_name, avatar_url), series(title)')
-        .eq('is_published', true)
+        .eq('creator_id', user.id)
         .order('created_at', { ascending: false });
 
       if (filterType !== 'all') {
@@ -59,7 +68,7 @@ export default function LibraryPage() {
       setHasMore((data || []).length === PAGE_SIZE);
     } catch (err: any) {
       console.error('Library fetch error:', err);
-      toast.error('Failed to sync discovery feed');
+      toast.error('Failed to sync your library');
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -101,10 +110,10 @@ export default function LibraryPage() {
                 animate={{ opacity: 1, x: 0 }}
                 className="text-5xl md:text-7xl font-black font-heading uppercase italic tracking-tighter leading-none"
               >
-                The <span className="text-primary italic">Library</span>
+                My <span className="text-primary italic">Library</span>
               </motion.h1>
               <p className="text-[10px] font-black uppercase tracking-[0.4em] text-muted-foreground ml-1">
-                 Access the collective intelligence of the academy
+                 Your personal repository of academy research and insights
               </p>
            </div>
 
