@@ -9,6 +9,7 @@ import { GallerySlider } from '@/components/feed/gallery-slider';
 import { FeedSidebar } from '@/components/feed/feed-sidebar';
 import { FeedContentInfo } from '@/components/feed/feed-content-info';
 import { DoubleTapHeart } from '@/components/feed/double-tap-heart';
+import { CommentSection } from '@/components/feed/comment-section';
 import { useAppSelector } from '@/store/hooks';
 import { toast } from 'sonner';
 
@@ -25,6 +26,7 @@ export function ProfileFeedOverlay({ isOpen, onClose, videos, initialIndex }: Pr
   const containerRef = useRef<HTMLDivElement>(null);
   const [items, setItems] = useState(videos);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
+  const [commentingId, setCommentingId] = useState<string | null>(null);
   const { user } = useAppSelector(state => state.auth);
 
   useEffect(() => {
@@ -282,6 +284,7 @@ export function ProfileFeedOverlay({ isOpen, onClose, videos, initialIndex }: Pr
                 saves={item.saves_count || 0}
                 isLiked={likedIds.has(item.id)}
                 onLike={() => handleLike(item.id)}
+                onComment={() => setCommentingId(item.id)}
               />
             </section>
           );
@@ -305,6 +308,12 @@ export function ProfileFeedOverlay({ isOpen, onClose, videos, initialIndex }: Pr
           <ChevronDown className="w-8 h-8" />
          </button>
       </div>
+      <CommentSection 
+        isOpen={!!commentingId}
+        onClose={() => setCommentingId(null)}
+        contentId={commentingId || ''}
+        contentCreatorId={items.find(v => v.id === commentingId)?.creator_id || ''}
+      />
     </motion.div>
   );
 }

@@ -11,7 +11,8 @@ import {
   Eye,
   UserMinus,
   Calendar,
-  BarChart2
+  BarChart2,
+  MessageCircle
 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { useAppSelector } from '@/store/hooks';
@@ -37,10 +38,12 @@ export default function AnalyticsPage() {
   const [stats, setStats] = useState({
     totalLikes: 0,
     totalViews: 0,
+    totalComments: 0,
     totalFollowers: 0,
     totalUnfollowers: 0,
     likesTrend: 0,
     viewsTrend: 0,
+    commentsTrend: 0,
   });
 
   useEffect(() => {
@@ -76,6 +79,13 @@ export default function AnalyticsPage() {
         .eq('following_id', user!.id)
         .gte('created_at', startDateISO);
 
+      // 4. Fetch Comments
+      const { data: comments } = await supabase
+        .from('content_comments')
+        .select('created_at, content!inner(creator_id)')
+        .eq('content.creator_id', user!.id)
+        .gte('created_at', startDateISO);
+
       // Process data for charts
       const days = eachDayOfInterval({
         start: startOfDay(startDate),
@@ -86,6 +96,7 @@ export default function AnalyticsPage() {
         const dateStr = format(day, 'MMM dd');
         const dayLikes = likes?.filter(l => format(new Date(l.created_at), 'MMM dd') === dateStr).length || 0;
         const dayViews = views?.filter(v => format(new Date(v.created_at), 'MMM dd') === dateStr).length || 0;
+        const dayComments = comments?.filter(c => format(new Date(c.created_at), 'MMM dd') === dateStr).length || 0;
         const dayFollows = followLogs?.filter(l => l.event_type === 'follow' && format(new Date(l.created_at), 'MMM dd') === dateStr).length || 0;
         const dayUnfollows = followLogs?.filter(l => l.event_type === 'unfollow' && format(new Date(l.created_at), 'MMM dd') === dateStr).length || 0;
 
@@ -93,6 +104,7 @@ export default function AnalyticsPage() {
           name: dateStr,
           likes: dayLikes,
           views: dayViews,
+          comments: dayComments,
           followers: dayFollows,
           unfollowers: dayUnfollows,
           netGrowth: dayFollows - dayUnfollows
@@ -110,10 +122,12 @@ export default function AnalyticsPage() {
       setStats({
         totalLikes,
         totalViews,
+        totalComments: comments?.length || 0,
         totalFollowers,
         totalUnfollowers,
         likesTrend: calculateTrend(likes, timeRange),
         viewsTrend: calculateTrend(views, timeRange),
+        commentsTrend: calculateTrend(comments, timeRange),
       });
 
     } catch (err) {
@@ -206,6 +220,13 @@ export default function AnalyticsPage() {
             icon={UserMinus}
             color="text-muted-foreground"
           />
+          <StatCard
+            title="Comments"
+            value={stats.totalComments}
+            trend={stats.commentsTrend}
+            icon={MessageCircle}
+            color="text-amber-500"
+          />
         </div>
 
         {/* Main Charts */}
@@ -243,6 +264,7 @@ export default function AnalyticsPage() {
                 />
                 <Area type="monotone" dataKey="likes" stroke="#f43f5e" fillOpacity={1} fill="url(#colorLikes)" strokeWidth={3} />
                 <Area type="monotone" dataKey="views" stroke="#6366f1" fillOpacity={1} fill="url(#colorViews)" strokeWidth={3} />
+                <Area type="monotone" dataKey="comments" stroke="#f59e0b" fillOpacity={0} strokeWidth={3} strokeDasharray="5 5" />
               </AreaChart>
             </ResponsiveContainer>
           </ChartSection>
