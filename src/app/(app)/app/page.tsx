@@ -9,6 +9,7 @@ import { GallerySlider } from '@/components/feed/gallery-slider';
 import { FeedSidebar } from '@/components/feed/feed-sidebar';
 import { FeedContentInfo } from '@/components/feed/feed-content-info';
 import { DoubleTapHeart } from '@/components/feed/double-tap-heart';
+import { CommentSection } from '@/components/feed/comment-section';
 import { useAppSelector } from '@/store/hooks';
 
 export default function FeedPage() {
@@ -21,6 +22,7 @@ export default function FeedPage() {
   const [page, setPage] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
+  const [commentingId, setCommentingId] = useState<string | null>(null);
   const { user } = useAppSelector(state => state.auth);
   const PAGE_SIZE = 5;
 
@@ -292,12 +294,14 @@ export default function FeedPage() {
               saves={item.saves_count || 0}
               isLiked={likedIds.has(item.id)}
               onLike={() => handleLike(item.id)}
+              onComment={() => setCommentingId(item.id)}
             />
           </section>
         );
       })}
 
-      <div className="fixed right-8 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-4 text-white/20 z-50">
+      {/* Desktop Scroll Navigation */}
+      <div className="fixed left-8 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-4 text-white/10 z-50">
          <button 
           onClick={() => scrollToIndex(Math.max(0, currentIndex - 1))}
           disabled={currentIndex === 0}
@@ -305,7 +309,7 @@ export default function FeedPage() {
          >
           <ChevronUp className="w-8 h-8" />
          </button>
-         <div className="h-20 w-[1px] bg-white/10 mx-auto" />
+         <div className="h-20 w-[1px] bg-white/5 mx-auto" />
          <button 
           onClick={() => scrollToIndex(Math.min(videos.length - 1, currentIndex + 1))}
           disabled={currentIndex === videos.length - 1 && !hasMore}
@@ -314,6 +318,12 @@ export default function FeedPage() {
           <ChevronDown className="w-8 h-8" />
          </button>
       </div>
+      <CommentSection 
+        isOpen={!!commentingId}
+        onClose={() => setCommentingId(null)}
+        contentId={commentingId || ''}
+        contentCreatorId={videos.find(v => v.id === commentingId)?.creator_id || ''}
+      />
     </div>
   );
 }
