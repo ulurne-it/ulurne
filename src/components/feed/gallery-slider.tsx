@@ -125,9 +125,9 @@ export function GallerySlider({ images, isActive, getPublicUrl, onView }: Galler
       {/* Progress Dots */}
       <div className="absolute bottom-10 left-1/2 -translate-x-1/2 flex gap-1.5 z-30">
         {images.map((_, i) => (
-          <div 
-            key={i} 
-            className={`h-1 rounded-full transition-all duration-300 ${i === currentIndex ? 'w-6 bg-primary' : 'w-1 bg-white/20'}`} 
+          <div
+            key={i}
+            className={`h-1 rounded-full transition-all duration-300 ${i === currentIndex ? 'w-6 bg-primary' : 'w-1 bg-white/20'}`}
           />
         ))}
       </div>
