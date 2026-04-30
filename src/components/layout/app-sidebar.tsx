@@ -7,12 +7,13 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LogoutModal } from '@/components/auth/logout-modal';
+import { useNotifications } from '@/hooks/use-notifications';
 
 const sidebarItems = [
   { name: 'Feed', href: '/app', icon: Home },
   { name: 'Explore', href: '/explore', icon: Compass },
   { name: 'Library', href: '/library', icon: Library },
-  { name: 'Notifications', href: '/notifications', icon: Bell },
+  { name: 'Notifications', href: '/notifications', icon: Bell, isNotification: true },
   { name: 'Profile', href: '/profile', icon: User },
 ];
 
@@ -24,6 +25,7 @@ interface SidebarProps {
 export function AppSidebar({ isCollapsed, onToggle }: SidebarProps) {
   const pathname = usePathname();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const { unreadCount } = useNotifications();
 
   return (
     <>
@@ -77,21 +79,31 @@ export function AppSidebar({ isCollapsed, onToggle }: SidebarProps) {
               >
                 <div className={`relative z-10 transition-transform group-active:scale-90 ${isActive ? 'text-primary' : ''}`}>
                   <item.icon className="w-5 h-5 shrink-0" />
+                  {item.isNotification && unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-black" />
+                  )}
                 </div>
                 
                 {!isCollapsed && (
-                  <motion.span
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className="relative z-10 text-[10px] font-black uppercase tracking-[0.15em] whitespace-nowrap overflow-hidden"
-                  >
-                    {item.name}
-                  </motion.span>
+                  <div className="flex-1 flex items-center justify-between min-w-0">
+                    <motion.span
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      className="relative z-10 text-[10px] font-black uppercase tracking-[0.15em] whitespace-nowrap overflow-hidden"
+                    >
+                      {item.name}
+                    </motion.span>
+                    {item.isNotification && unreadCount > 0 && (
+                      <span className="px-1.5 py-0.5 rounded-full bg-primary/20 text-primary text-[8px] font-black">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
+                  </div>
                 )}
 
                 {isCollapsed && (
                   <div className="absolute left-full ml-4 px-3 py-1.5 bg-white text-black text-[9px] font-black uppercase tracking-widest rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition-all z-50 whitespace-nowrap shadow-2xl">
-                    {item.name}
+                    {item.name} {item.isNotification && unreadCount > 0 ? `(${unreadCount})` : ''}
                   </div>
                 )}
 

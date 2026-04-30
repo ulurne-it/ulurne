@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { LogoutModal } from '@/components/auth/logout-modal';
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { useNotifications } from '@/hooks/use-notifications';
 
 const navItems = [
   { name: 'Home', href: '/app', icon: Home },
@@ -17,7 +18,7 @@ const navItems = [
 ];
 
 const drawerItems = [
-  { name: 'Notifications', href: '/notifications', icon: Bell },
+  { name: 'Notifications', href: '/notifications', icon: Bell, isNotification: true },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
@@ -26,6 +27,7 @@ export function AppBottomNav() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [showMore, setShowMore] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const { unreadCount } = useNotifications();
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -61,12 +63,19 @@ export function AppBottomNav() {
                     key={item.name}
                     href={item.href}
                     onClick={() => setShowMore(false)}
-                    className={`flex items-center gap-3 p-3 rounded-xl transition-all duration-300 ${
+                    className={`flex items-center justify-between p-3 rounded-xl transition-all duration-300 ${
                       isActive ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-white/5 active:scale-95'
                     }`}
                   >
-                    <item.icon className="w-4 h-4" />
-                    <span className="font-heading font-black text-[10px] uppercase tracking-widest">{item.name}</span>
+                    <div className="flex items-center gap-3">
+                      <item.icon className="w-4 h-4" />
+                      <span className="font-heading font-black text-[10px] uppercase tracking-widest">{item.name}</span>
+                    </div>
+                    {item.isNotification && unreadCount > 0 && (
+                      <span className="px-1.5 py-0.5 rounded-full bg-primary/20 text-primary text-[8px] font-black">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
                   </Link>
                 );
               })}
@@ -145,6 +154,9 @@ export function AppBottomNav() {
             }`}
           >
             {showMore ? <X className="w-5 h-5" /> : <LayoutGrid className="w-5 h-5" />}
+            {!showMore && unreadCount > 0 && (
+              <span className="absolute top-3 right-2 w-2 h-2 bg-red-500 rounded-full border border-black" />
+            )}
           </button>
         </nav>
       </div>
