@@ -15,13 +15,15 @@ interface CommentItemProps {
   contentCreatorId: string;
   onPostReply: (text: string, parentId: string) => Promise<void>;
   depth?: number;
+  replyingTo?: string;
 }
 
 export function CommentItem({ 
   comment, 
   contentCreatorId, 
   onPostReply, 
-  depth = 0 
+  depth = 0,
+  replyingTo
 }: CommentItemProps) {
   const [localComment, setLocalComment] = useState(comment);
   const [isLiked, setIsLiked] = useState(false);
@@ -202,8 +204,8 @@ export function CommentItem({
                     {localComment.profiles?.username || 'anonymous'}
                   </span>
                   <span className="text-white/80">
-                    {depth > 1 && (
-                      <span className="text-blue-500/80 mr-1">@{localComment.profiles?.username}</span>
+                    {depth > 0 && replyingTo && (
+                      <span className="text-blue-500/80 mr-1">@{replyingTo}</span>
                     )}
                     {localComment.text}
                   </span>
@@ -313,6 +315,7 @@ export function CommentItem({
                     contentCreatorId={contentCreatorId}
                     onPostReply={onPostReply}
                     depth={depth + 1}
+                    replyingTo={localComment.profiles?.username}
                   />
                 ))}
               </motion.div>
