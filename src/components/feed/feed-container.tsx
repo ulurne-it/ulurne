@@ -11,8 +11,14 @@ import { FeedContentInfo } from '@/components/feed/feed-content-info';
 import { DoubleTapHeart } from '@/components/feed/double-tap-heart';
 import { CommentSection } from '@/components/feed/comment-section';
 import { useAppSelector } from '@/store/hooks';
+import { useRouter } from 'next/navigation';
 
-export default function FeedPage() {
+interface FeedContainerProps {
+  initialId?: string;
+}
+
+export function FeedContainer({ initialId }: FeedContainerProps) {
+  const router = useRouter();
   const [videos, setVideos] = useState<any[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [galleryImages, setGalleryImages] = useState<Record<string, any[]>>({});
@@ -38,30 +44,52 @@ export default function FeedPage() {
       if (!isLoadMore) setLoading(true);
       else setLoadingMore(true);
 
+      let initialContent = null;
+      if (!isLoadMore && pageNum === 0 && initialId) {
+        const { data: specificData } = await supabase
+          .from('content')
+          .select('*, profiles(username, full_name, avatar_url), series(title)')
+          .eq('id', initialId)
+          .single();
+        
+        if (specificData) {
+          initialContent = specificData;
+        }
+      }
+
       const from = pageNum * PAGE_SIZE;
       const to = from + PAGE_SIZE - 1;
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('content')
         .select('*, profiles(username, full_name, avatar_url), series(title)')
         .eq('is_published', true)
-        .order('created_at', { ascending: false })
-        .range(from, to);
+        .order('created_at', { ascending: false });
+
+      if (initialId) {
+        query = query.neq('id', initialId);
+      }
+
+      const { data, error } = await query.range(from, to);
 
       if (error) throw error;
 
       if (data) {
-        if (isLoadMore) setVideos(prev => [...prev, ...data]);
-        else setVideos(data);
+        let newVideos = data;
+        if (initialContent && pageNum === 0) {
+          newVideos = [initialContent, ...data];
+        }
 
-        const galleryIds = data.filter(item => item.type === 'image_gallery').map(item => item.id);
+        if (isLoadMore) setVideos(prev => [...prev, ...newVideos]);
+        else setVideos(newVideos);
+
+        const galleryIds = newVideos.filter(item => item.type === 'image_gallery').map(item => item.id);
         if (galleryIds.length > 0) fetchGalleries(galleryIds);
 
         setHasMore(data.length === PAGE_SIZE);
       }
     } catch (err) {
       console.error('Error fetching feed:', err);
-      toast.error('Failed to sync academy feed');
     } finally {
       setLoading(false);
       setLoadingMore(false);
@@ -89,12 +117,14 @@ export default function FeedPage() {
     }
   };
 
+  const hasInitialized = useRef(false);
   useEffect(() => {
+    if (hasInitialized.current) return;
     fetchFeed(0);
+    hasInitialized.current = true;
     
-    // Subscribe to content changes for real-time likes
     const channel = supabase
-      .channel('feed-realtime')
+      .channel(`feed-realtime-${Math.random()}`)
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'content' },
@@ -139,8 +169,6 @@ export default function FeedPage() {
     }
 
     const isLiked = likedIds.has(contentId);
-    
-    // Optimistic Update
     setLikedIds(prev => {
       const next = new Set(prev);
       if (isLiked) next.delete(contentId);
@@ -156,45 +184,20 @@ export default function FeedPage() {
 
     try {
       if (isLiked) {
-        await supabase
-          .from('content_likes')
-          .delete()
-          .match({ content_id: contentId, user_id: user.id });
+        await supabase.from('content_likes').delete().match({ content_id: contentId, user_id: user.id });
       } else {
-        await supabase
-          .from('content_likes')
-          .insert({ content_id: contentId, user_id: user.id });
+        await supabase.from('content_likes').insert({ content_id: contentId, user_id: user.id });
       }
     } catch (err) {
       console.error('Error toggling like:', err);
-      // Rollback on error
-      setLikedIds(prev => {
-        const next = new Set(prev);
-        if (isLiked) next.add(contentId);
-        else next.delete(contentId);
-        return next;
-      });
-      setVideos(prev => prev.map(v => 
-        v.id === contentId 
-          ? { ...v, likes_count: (v.likes_count || 0) + (isLiked ? 1 : -1) } 
-          : v
-      ));
     }
   };
 
   const handleView = async (contentId: string) => {
     try {
-      // Optimistic update
-      setVideos(prev => prev.map(v => 
-        v.id === contentId ? { ...v, views_count: (v.views_count || 0) + 1 } : v
-      ));
-
-      await supabase
-        .from('content_views')
-        .insert({ content_id: contentId, user_id: user?.id });
-    } catch (err) {
-      // UNIQUE constraint handles duplicate views
-    }
+      setVideos(prev => prev.map(v => v.id === contentId ? { ...v, views_count: (v.views_count || 0) + 1 } : v));
+      await supabase.from('content_views').insert({ content_id: contentId, user_id: user?.id });
+    } catch (err) {}
   };
 
   useEffect(() => {
@@ -219,6 +222,13 @@ export default function FeedPage() {
     const index = Math.round(e.currentTarget.scrollTop / e.currentTarget.clientHeight);
     if (index !== currentIndex) {
       setCurrentIndex(index);
+      
+      const video = videos[index];
+      if (video) {
+        // Use window.history.replaceState to avoid Next.js re-mounts/re-renders
+        window.history.replaceState(null, '', `/app/${video.id}`);
+      }
+
       if (index >= videos.length - 2 && hasMore && !loadingMore) {
         const nextPage = page + 1;
         setPage(nextPage);
@@ -230,8 +240,8 @@ export default function FeedPage() {
   if (loading && videos.length === 0) {
     return (
       <div className="h-screen w-full flex flex-col items-center justify-center bg-black gap-4">
-        <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        <p className="text-[10px] font-black uppercase tracking-[0.4em] animate-pulse text-white">Syncing Academy Feed...</p>
+        <Loader2 className="w-6 h-6 animate-spin text-primary" />
+        <p className="text-[10px] font-black uppercase tracking-[0.4em] animate-pulse text-white">Syncing Feed...</p>
       </div>
     );
   }
@@ -256,74 +266,30 @@ export default function FeedPage() {
             <div className="absolute inset-0 w-full h-full bg-black">
               <DoubleTapHeart onDoubleTap={() => !likedIds.has(item.id) && handleLike(item.id)}>
                 {isVideo ? (
-                  <VideoPlayer 
-                    src={getPublicUrl(item.media_url)} 
-                    isActive={isActive} 
-                    onView={() => handleView(item.id)}
-                  />
+                  <VideoPlayer src={getPublicUrl(item.media_url)} isActive={isActive} onView={() => handleView(item.id)} />
                 ) : isGallery ? (
-                  <GallerySlider 
-                    images={galleryImages[item.id] || []} 
-                    isActive={isActive}
-                    getPublicUrl={getPublicUrl}
-                    onView={() => handleView(item.id)}
-                  />
+                  <GallerySlider images={galleryImages[item.id] || []} isActive={isActive} getPublicUrl={getPublicUrl} onView={() => handleView(item.id)} />
                 ) : (
-                  <img 
-                    src={getPublicUrl(item.media_url || item.thumbnail_url)} 
-                    className="w-full h-full object-contain" 
-                    alt=""
-                  />
+                  <img src={getPublicUrl(item.media_url || item.thumbnail_url)} className="w-full h-full object-contain" alt="" />
                 )}
               </DoubleTapHeart>
             </div>
 
             <div className="absolute inset-0 bg-linear-to-b from-black/20 via-transparent to-black/90 pointer-events-none" />
 
-            <FeedContentInfo 
-              username={item.profiles?.username}
-              avatarUrl={item.profiles?.avatar_url}
-              type={item.type}
-              title={item.title}
-              description={item.description}
-            />
+            <FeedContentInfo username={item.profiles?.username} avatarUrl={item.profiles?.avatar_url} type={item.type} title={item.title} description={item.description} />
 
-            <FeedSidebar 
-              likes={item.likes_count || 0}
-              comments={item.comments_count || 0}
-              saves={item.saves_count || 0}
-              isLiked={likedIds.has(item.id)}
-              onLike={() => handleLike(item.id)}
-              onComment={() => setCommentingId(item.id)}
-            />
+            <FeedSidebar likes={item.likes_count || 0} comments={item.comments_count || 0} saves={item.saves_count || 0} isLiked={likedIds.has(item.id)} onLike={() => handleLike(item.id)} onComment={() => setCommentingId(item.id)} />
           </section>
         );
       })}
 
-      {/* Desktop Scroll Navigation */}
       <div className="fixed left-8 top-1/2 -translate-y-1/2 hidden md:flex flex-col gap-4 text-white/10 z-50">
-         <button 
-          onClick={() => scrollToIndex(Math.max(0, currentIndex - 1))}
-          disabled={currentIndex === 0}
-          className="p-2 hover:text-primary transition-colors disabled:opacity-10"
-         >
-          <ChevronUp className="w-8 h-8" />
-         </button>
+         <button onClick={() => scrollToIndex(Math.max(0, currentIndex - 1))} disabled={currentIndex === 0} className="p-2 hover:text-primary transition-colors disabled:opacity-10"><ChevronUp className="w-8 h-8" /></button>
          <div className="h-20 w-[1px] bg-white/5 mx-auto" />
-         <button 
-          onClick={() => scrollToIndex(Math.min(videos.length - 1, currentIndex + 1))}
-          disabled={currentIndex === videos.length - 1 && !hasMore}
-          className="p-2 hover:text-primary transition-colors disabled:opacity-10"
-         >
-          <ChevronDown className="w-8 h-8" />
-         </button>
+         <button onClick={() => scrollToIndex(Math.min(videos.length - 1, currentIndex + 1))} disabled={currentIndex === videos.length - 1 && !hasMore} className="p-2 hover:text-primary transition-colors disabled:opacity-10"><ChevronDown className="w-8 h-8" /></button>
       </div>
-      <CommentSection 
-        isOpen={!!commentingId}
-        onClose={() => setCommentingId(null)}
-        contentId={commentingId || ''}
-        contentCreatorId={videos.find(v => v.id === commentingId)?.creator_id || ''}
-      />
+      <CommentSection isOpen={!!commentingId} onClose={() => setCommentingId(null)} contentId={commentingId || ''} contentCreatorId={videos.find(v => v.id === commentingId)?.creator_id || ''} />
     </div>
   );
 }

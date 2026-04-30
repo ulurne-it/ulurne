@@ -89,7 +89,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-background text-white">
+    <div className={`min-h-screen bg-background text-white ${pathname.startsWith('/app') ? 'h-screen overflow-hidden' : ''}`}>
       {/* Top Bar — now overlays the content for an immersive feel */}
       <AppTopBar offset={offset} />
 
@@ -107,7 +107,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         }}
         className="relative"
       >
-        <div className={`h-full ${pathname === '/app' ? 'pt-0' : 'pt-16'}`}>
+        <div className={`h-full ${pathname.startsWith('/app') ? 'pt-0' : 'pt-16'}`}>
           {children}
         </div>
       </main>
